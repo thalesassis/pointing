@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;1,100;1,300;1,400;1,500;1,700&display=swap');
+@import 'mixins';
+
+html,
+body {
+  @include font('Roboto');
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+input {
+  @include font('Roboto');
+  font-weight: 100;
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+button {
+  @include font('Roboto');
+  display: block;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  text-transform: uppercase;
+  padding: 7px 20px;
+  background: #efefef;
+  color: #888;
+  border-radius: 3px;
+
+  &:hover {
+    border: 1px solid #888;
+    color: #555;
+  }
+}
+
+main {
+  height: 100vh;
+  background-image: url('../public/bg.jpg'); 
+  background-size: cover;
+
+  .big-input {
+    padding-top: 50px;
+    width: 50%;
+    margin: 0px auto;
+
+    input {
+      display: block;
+      width: 100%;
+      height: 100%;
+      font-size: 36px;
+      padding: 10px;
+      background: #FFF;
+      text-align: center;
+      margin: 0px auto 30px auto;
+    }
+
+    button {
+      margin: 0px auto;
+    }
+  }
+} 
+
