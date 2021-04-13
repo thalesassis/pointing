@@ -22,5 +22,9 @@ app.prepare()
 
   io.on('connection', (socket) => {
     console.log('a user connected');
+
+    socket.on('name', (data) => {
+      console.log(data);
+    });
   });
 })
