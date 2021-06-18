@@ -1,9 +1,15 @@
 import '../styles/globals.scss'
-
 import type { AppProps /*, AppContext */ } from 'next/app'
+import { socketContext } from './context/socketContext';
+import { io } from "socket.io-client";
 
-function MyApp({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />
+const socket = io();
+const MyApp = ({ Component, pageProps }: AppProps) => {
+  return (
+    <socketContext.Provider value={socket}>
+      <Component {...pageProps} />
+    </socketContext.Provider>
+  )
 }
 
 // Only uncomment this method if you have blocking data requirements for
