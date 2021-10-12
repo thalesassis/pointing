@@ -1,9 +1,18 @@
 import '../styles/globals.scss'
+import { useEffect } from "react";
 import type { AppProps /*, AppContext */ } from 'next/app'
-import { socketContext } from './context/socketContext';
+import socketContext from '../context/socketContext';
+import Cookies from 'js-cookie';;
 import { io } from "socket.io-client";
 
 const socket = io();
+
+let userCookie = Cookies.get("user-token");
+socket.emit('user-token', userCookie);
+socket.on('user-token', (data) => {
+  Cookies.set('user-token', data);
+})
+
 const MyApp = ({ Component, pageProps }: AppProps) => {
   return (
     <socketContext.Provider value={socket}>
