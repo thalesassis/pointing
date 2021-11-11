@@ -1,0 +1,475 @@
+.tracker-markup {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  overflow: hidden;
+
+  div,
+  span,
+  applet,
+  object,
+  iframe,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  blockquote,
+  pre,
+  a,
+  abbr,
+  acronym,
+  address,
+  big,
+  cite,
+  code,
+  del,
+  dfn,
+  em,
+  img,
+  ins,
+  kbd,
+  q,
+  s,
+  samp,
+  small,
+  strike,
+  strong,
+  sub,
+  sup,
+  tt,
+  var,
+  b,
+  u,
+  i,
+  center,
+  dl,
+  dt,
+  dd,
+  ol,
+  ul,
+  li,
+  fieldset,
+  form,
+  label,
+  legend,
+  table,
+  caption,
+  tbody,
+  tfoot,
+  thead,
+  tr,
+  th,
+  td,
+  article,
+  aside,
+  canvas,
+  details,
+  embed,
+  figure,
+  figcaption,
+  footer,
+  header,
+  hgroup,
+  menu,
+  nav,
+  output,
+  ruby,
+  section,
+  summary,
+  time,
+  mark,
+  audio,
+  video {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font: inherit;
+    font-size: 100%;
+    vertical-align: baseline;
+  }
+
+  html {
+    line-height: 1;
+  }
+
+  ol,
+  ul {
+    list-style: none;
+  }
+
+  table {
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+
+  caption,
+  th,
+  td {
+    text-align: left;
+    font-weight: normal;
+    vertical-align: middle;
+  }
+
+  q,
+  blockquote {
+    quotes: none;
+  }
+
+  q:before,
+  q:after,
+  blockquote:before,
+  blockquote:after {
+    content: "";
+    content: none;
+  }
+
+  a img {
+    border: none;
+  }
+}
+
+.tracker-markup pre + pre,
+.tracker-markup blockquote + pre,
+.tracker-markup hr + pre,
+.tracker-markup h1 + pre,
+.tracker-markup h2 + pre,
+.tracker-markup h3 + pre,
+.tracker-markup h4 + pre,
+.tracker-markup h5 + pre,
+.tracker-markup h6 + pre,
+.tracker-markup p + pre,
+.tracker-markup table + pre,
+.tracker-markup ul + pre,
+.tracker-markup ol + pre {
+  margin-top: 10px;
+}
+
+.tracker-markup pre + blockquote,
+.tracker-markup blockquote + blockquote,
+.tracker-markup hr + blockquote,
+.tracker-markup h1 + blockquote,
+.tracker-markup h2 + blockquote,
+.tracker-markup h3 + blockquote,
+.tracker-markup h4 + blockquote,
+.tracker-markup h5 + blockquote,
+.tracker-markup h6 + blockquote,
+.tracker-markup p + blockquote,
+.tracker-markup table + blockquote,
+.tracker-markup ul + blockquote,
+.tracker-markup ol + blockquote {
+  margin-top: 10px;
+}
+
+.tracker-markup pre + hr,
+.tracker-markup blockquote + hr,
+.tracker-markup hr + hr,
+.tracker-markup h1 + hr,
+.tracker-markup h2 + hr,
+.tracker-markup h3 + hr,
+.tracker-markup h4 + hr,
+.tracker-markup h5 + hr,
+.tracker-markup h6 + hr,
+.tracker-markup p + hr,
+.tracker-markup table + hr,
+.tracker-markup ul + hr,
+.tracker-markup ol + hr {
+  margin-top: 10px;
+}
+
+.tracker-markup pre + h1,
+.tracker-markup blockquote + h1,
+.tracker-markup hr + h1,
+.tracker-markup h1 + h1,
+.tracker-markup h2 + h1,
+.tracker-markup h3 + h1,
+.tracker-markup h4 + h1,
+.tracker-markup h5 + h1,
+.tracker-markup h6 + h1,
+.tracker-markup p + h1,
+.tracker-markup table + h1,
+.tracker-markup ul + h1,
+.tracker-markup ol + h1 {
+  margin-top: 10px;
+}
+
+.tracker-markup pre + h2,
+.tracker-markup blockquote + h2,
+.tracker-markup hr + h2,
+.tracker-markup h1 + h2,
+.tracker-markup h2 + h2,
+.tracker-markup h3 + h2,
+.tracker-markup h4 + h2,
+.tracker-markup h5 + h2,
+.tracker-markup h6 + h2,
+.tracker-markup p + h2,
+.tracker-markup table + h2,
+.tracker-markup ul + h2,
+.tracker-markup ol + h2 {
+  margin-top: 10px;
+}
+
+.tracker-markup pre + h3,
+.tracker-markup blockquote + h3,
+.tracker-markup hr + h3,
+.tracker-markup h1 + h3,
+.tracker-markup h2 + h3,
+.tracker-markup h3 + h3,
+.tracker-markup h4 + h3,
+.tracker-markup h5 + h3,
+.tracker-markup h6 + h3,
+.tracker-markup p + h3,
+.tracker-markup table + h3,
+.tracker-markup ul + h3,
+.tracker-markup ol + h3 {
+  margin-top: 10px;
+}
+
+.tracker-markup pre + h4,
+.tracker-markup blockquote + h4,
+.tracker-markup hr + h4,
+.tracker-markup h1 + h4,
+.tracker-markup h2 + h4,
+.tracker-markup h3 + h4,
+.tracker-markup h4 + h4,
+.tracker-markup h5 + h4,
+.tracker-markup h6 + h4,
+.tracker-markup p + h4,
+.tracker-markup table + h4,
+.tracker-markup ul + h4,
+.tracker-markup ol + h4 {
+  margin-top: 10px;
+}
+
+.tracker-markup pre + h5,
+.tracker-markup blockquote + h5,
+.tracker-markup hr + h5,
+.tracker-markup h1 + h5,
+.tracker-markup h2 + h5,
+.tracker-markup h3 + h5,
+.tracker-markup h4 + h5,
+.tracker-markup h5 + h5,
+.tracker-markup h6 + h5,
+.tracker-markup p + h5,
+.tracker-markup table + h5,
+.tracker-markup ul + h5,
+.tracker-markup ol + h5 {
+  margin-top: 10px;
+}
+
+.tracker-markup pre + h6,
+.tracker-markup blockquote + h6,
+.tracker-markup hr + h6,
+.tracker-markup h1 + h6,
+.tracker-markup h2 + h6,
+.tracker-markup h3 + h6,
+.tracker-markup h4 + h6,
+.tracker-markup h5 + h6,
+.tracker-markup h6 + h6,
+.tracker-markup p + h6,
+.tracker-markup table + h6,
+.tracker-markup ul + h6,
+.tracker-markup ol + h6 {
+  margin-top: 10px;
+}
+
+.tracker-markup pre + p,
+.tracker-markup blockquote + p,
+.tracker-markup hr + p,
+.tracker-markup h1 + p,
+.tracker-markup h2 + p,
+.tracker-markup h3 + p,
+.tracker-markup h4 + p,
+.tracker-markup h5 + p,
+.tracker-markup h6 + p,
+.tracker-markup p + p,
+.tracker-markup table + p,
+.tracker-markup ul + p,
+.tracker-markup ol + p {
+  margin-top: 10px;
+}
+
+.tracker-markup pre + table,
+.tracker-markup blockquote + table,
+.tracker-markup hr + table,
+.tracker-markup h1 + table,
+.tracker-markup h2 + table,
+.tracker-markup h3 + table,
+.tracker-markup h4 + table,
+.tracker-markup h5 + table,
+.tracker-markup h6 + table,
+.tracker-markup p + table,
+.tracker-markup table + table,
+.tracker-markup ul + table,
+.tracker-markup ol + table {
+  margin-top: 10px;
+}
+
+.tracker-markup pre + ul,
+.tracker-markup blockquote + ul,
+.tracker-markup hr + ul,
+.tracker-markup h1 + ul,
+.tracker-markup h2 + ul,
+.tracker-markup h3 + ul,
+.tracker-markup h4 + ul,
+.tracker-markup h5 + ul,
+.tracker-markup h6 + ul,
+.tracker-markup p + ul,
+.tracker-markup table + ul,
+.tracker-markup ul + ul,
+.tracker-markup ol + ul {
+  margin-top: 10px;
+}
+
+.tracker-markup pre + ol,
+.tracker-markup blockquote + ol,
+.tracker-markup hr + ol,
+.tracker-markup h1 + ol,
+.tracker-markup h2 + ol,
+.tracker-markup h3 + ol,
+.tracker-markup h4 + ol,
+.tracker-markup h5 + ol,
+.tracker-markup h6 + ol,
+.tracker-markup p + ol,
+.tracker-markup table + ol,
+.tracker-markup ul + ol,
+.tracker-markup ol + ol {
+  margin-top: 10px;
+}
+
+.tracker-markup ul,
+.tracker-markup ol {
+  margin-left: 1em;
+  padding-left: 1em;
+}
+
+.tracker-markup ul {
+  list-style: disc;
+}
+
+.tracker-markup ol {
+  list-style: decimal;
+}
+
+.tracker-markup li {
+  line-height: 1.6;
+}
+
+.tracker-markup img {
+  max-width: 100%;
+  word-break: break-all;
+}
+
+.tracker-markup pre,
+.tracker-markup code,
+.tracker-markup blockquote {
+  background-color: #f8f8f8;
+  border: solid 1px #ddd;
+  border-radius: 3px;
+  color: #444;
+}
+
+.tracker-markup pre {
+  white-space: pre;
+}
+
+.tracker-markup blockquote,
+.tracker-markup pre {
+  padding: 6px 10px;
+  overflow: auto;
+}
+
+.tracker-markup pre > code {
+  display: block;
+  border: none;
+  padding: 0;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  word-wrap: normal;
+}
+
+.tracker-markup code {
+  padding: 2px 5px;
+  font-family: Consolas, 'Liberation Mono', Courier, monospace, EmojiFontFace;
+}
+
+.tracker-markup strong {
+  font-weight: bold;
+}
+
+.tracker-markup em {
+  font-style: italic;
+}
+
+.tracker-markup a {
+  color: #0957a4;
+}
+
+.tracker-markup a,
+.tracker-markup a:visited,
+.tracker-markup a.label:hover,
+.tracker-markup a.label:active {
+  text-decoration: none;
+}
+
+.tracker-markup a:hover,
+.tracker-markup a:active {
+  text-decoration: underline;
+}
+
+.tracker-markup hr {
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 1px solid #aaa;
+  border-left: 0;
+  margin: 17px 0 0 0;
+}
+
+.tracker-markup table {
+  display: block;
+  overflow-x: auto;
+  border-spacing: 0;
+  padding: 0;
+  width: 100%;
+  word-break: normal;
+}
+
+.tracker-markup table td,
+.tracker-markup table th {
+  border: 1px solid #a0a0a0;
+  padding: 1px;
+}
+
+.tracker-markup .label {
+  color: #063;
+}
+
+.mozilla .tracker-markup .label {
+  letter-spacing: 0.02em;
+}
+
+.tracker-markup .label.epic {
+  color: #452481;
+}
+
+.tracker-markup .mention {
+  color: #e25d05;
+  padding: 0 2px 1px 1px;
+  cursor: default;
+  font-weight: 600;
+}
+
+.tracker-markup .native_emoji {
+  text-decoration: inherit;
+  display: inline-block;
+  font-size: 14px;
+  line-height: 14px;
+  word-break: normal;
+  word-wrap: normal;
+}
+
+.tracker-markup .native_emoji.chrome_browser {
+  letter-spacing: 4px;
+}

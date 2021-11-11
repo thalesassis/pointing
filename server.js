@@ -9,27 +9,39 @@ const axios = require('axios');
 app.prepare()
 .then(() => {
   const server = express()
-  const http = require('http').createServer(server);
+  const fs = require('fs');
+  let http = null;
+
+  if (process.env.SSL_MODE == 'true') {
+    let privateKey = fs.readFileSync(process.env.SSL_KEY_FILE, 'utf8');
+    let certificate = fs.readFileSync(process.env.SSL_CRT_FILE, 'utf8');  
+    const credential = { key: privateKey, cert: certificate };
+    http = require('https').createServer(credential, server);
+  } else {
+    http = require('http').createServer(server);
+  }
+  
   const io = require('socket.io')(http);
+
   let roomList = [];
   let userList = [];
-  let pointList = ['0','1','2','3','5','?'];
+  let pointList = ['0','1','2','3','5','8','?'];
   let userPoints = [];
   let revealVotes = false;
   let storyLoading = false;
   let storyRefreshTime = 5000;
-  
+
   server.get('*', (req, res) => {
     return handle(req, res);
   })
 
   http.listen(3000, (err) => {
     if (err) throw err
-    console.log('> Ready on http://localhost:3000')
+    console.log('> Ready')
   })
 
   io.on('connection', (socket) => {
-    console.log('a user connected ' + socket.id);
+    //console.log('a user connected ' + socket.id);
 
     socket.on('user-token', (data) => {
 
@@ -59,36 +71,48 @@ app.prepare()
 
     socket.on('get-story', (storyId) => {
       let room = userList.find(x => x.id === socket.id).room;
-      if (!storyLoading) {
-        io.to(room).emit('story-loading', true);
-        storyLoading = true;
-        axios.get('https://www.pivotaltracker.com/services/v5/projects/2434677/stories/178386051', {
-          headers: {
-            'X-TrackerToken': process.env.PT_TOKEN
-          }
-        })
-        .then(story => {
-          console.log(roomList);
-          roomList.find(x => x.room === room).story = story.data;
-          io.to(room).emit('story-loaded', story.data);
+      io.to(room).emit('story-loading', true);
+      storyLoading = true;
+      axios.get('https://www.pivotaltracker.com/services/v5/projects/2434677/stories/' + storyId.replace("#",""), {
+        headers: {
+          'X-TrackerToken': process.env.PT_TOKEN
+        }
+      })
+      .then(story => {          
+        let user = userList.find(x => x.id === socket.id);
+        if (user.room) {
+          roomList.find(x => x.room === user.room).story = story.data;
+          io.to(user.room).emit('story-loaded', story.data);
+        }
+        storyLoading = false;
 
-          setTimeout(() => {
-            storyLoading = false;
-          }, storyRefreshTime)
-        })
-      }
+      }).catch(e => {
+        io.to(room).emit('story-404');
+        storyLoading = false;
+      })
+      
       
     })
 
+    socket.on('close-story', () => {
+      let user = userList.find(x => x.id === socket.id);
+      if (user.room) {
+        roomList.find(x => x.room === user.room).story = { id: '', url: '', name: '', description: '' };
+        io.to(user.room).emit('close-story');
+      }
+    });
+
     socket.on('leave-room', () => {
-      let room = userList.find(x => x.id === socket.id).room;
-      socket.leave(room);
-      userList.find(x => x.id === socket.id).room = undefined;
-      console.log(userList);
-      userList.find(x => x.id === socket.id).data.point = undefined;
-      userList.find(x => x.id === socket.id).data.vote = undefined;
-      socket.join('lobby');
-      socket.emit('goto-index');
+      let user = userList.find(x => x.id === socket.id);
+      if (user) {
+        socket.leave(user.room);
+        user.room = undefined;
+        user.data.point = undefined;
+        user.data.vote = undefined;
+        user.data.voting = undefined;
+        socket.join('lobby');
+        socket.emit('goto-index');
+      }
     })
 
     socket.on('join-room', (data) => {
@@ -105,21 +129,48 @@ app.prepare()
       sendRoomsToLobby();
     });
 
+    socket.on('is-voting', (val) => {
+      if (val !== null) {
+        let user = userList.find(x => x.id === socket.id);
+        if (user) {
+          user.data.voting = val;
+          io.to(user.room).emit('someone-voting', JSON.stringify({ id: socket.id, status: val }));
+        }
+      }
+    })
+
+    socket.on('update-is-voting', () => {
+      let user = userList.find(x => x.id === socket.id);
+      if (user) {
+        io.to(user.room).emit('update-is-voting');
+      }
+    });
+
     socket.on('voted', (val) => {
       if (val !== null) {
-        let room = userList.find(x => x.id === socket.id).room;
-        let pointVal = val === 'Not voted' ? val : 'Voted';
-        if(revealVotes) {
-          pointVal = val;
+        let user = userList.find(x => x.id === socket.id);
+        if (user) {
+          let pointVal = val === 'Not voted' ? val : 'Voted';
+          let unflip = false;
+          if (revealVotes) {
+            pointVal = val;
+            unflip = true;
+          }
+          userList.find(x => x.id === socket.id).data.vote = val;
+          socket.broadcast.to(user.room).emit('someone-voted', JSON.stringify({ id: socket.id, vote: pointVal, flipEffect: true, unflip: unflip }));
         }
-        userList.find(x => x.id === socket.id).data.vote = val;
-        socket.broadcast.to(room).emit('someone-voted', JSON.stringify({ id: socket.id, vote: pointVal }));
       }
     })
 
     socket.on('user-name', (val) => {
-      userList.find(x => x.id === socket.id).name = val;
-      console.log(val);
+      let user = userList.find(x => x.id === socket.id);
+      if (user) {
+        user.name = val;
+        joinedRoom(socket);
+      }
+    })
+
+    socket.on('joined-room', (val) => {
       joinedRoom(socket);
     })
 
@@ -128,7 +179,7 @@ app.prepare()
       //if user access a room through url, check if it exists
       let gotoIndex = false;
       let rooms = userList.find(x => x.id === socket.id);
-      if (rooms !== undefined && rooms.room !== undefined) {
+      if (rooms && rooms.room !== undefined) {
         //user already in a room? send him to his room
         if (rooms.room != roomName) {
           socket.emit('goto-room', rooms.room);
@@ -145,7 +196,10 @@ app.prepare()
           if (userList.find(x => x.room === roomName)) { //room exists?
             socket.leave('lobby');
             socket.join(roomName);
-            userList.find(x => x.id === socket.id).room = roomName;
+            let user = userList.find(x => x.id === socket.id);
+            if (user) {
+              user.room = roomName;
+            }
           } else {
             socket.emit('goto-index');
             gotoIndex = true;
@@ -160,23 +214,26 @@ app.prepare()
 
     socket.on('reveal-votes', () => {
       revealVotes = true;
-      let room = userList.find(x => x.id === socket.id).room;
-      io.to(room).emit('reveal-votes');
+      let user = userList.find(x => x.id === socket.id);
+      if (user) {
+        io.to(user.room).emit('reveal-votes');
+      }
     });
 
     socket.on('reset-votes', () => {
       revealVotes = false;
-      let room = userList.find(x => x.id === socket.id).room;
-      let roomUsers = userList.filter(x => x.room === room);
-      for (r of roomUsers) {
-        r.data.point = '';
-        if (r.data.vote) { delete r.data.vote; }
+      let user = userList.find(x => x.id === socket.id);
+      if (user) {
+        let roomUsers = userList.filter(x => x.room === user.room);
+        for (r of roomUsers) {
+          r.data.point = '';
+          if (r.data.vote) { delete r.data.vote; }
+        }
+        io.to(user.room).emit('reset-votes', JSON.stringify({...roomUsers}))
       }
-      io.to(room).emit('reset-votes', JSON.stringify({...roomUsers}))
     });
 
     socket.on('disconnect', () => {
-        console.log("disconnect: ", socket.id);
         if (userList.find(x => x.id === socket.id)) {
           let room = userList.find(x => x.id === socket.id).room;
           setTimeout(() => {
@@ -190,10 +247,7 @@ app.prepare()
                 }
 
                 io.to(room).emit('rejoin');
-                console.log("User out, lets rejoin");
               }
-              console.log("Timed out : ", socket.id);
-              console.log(userList);
 
           }, 3000);
         }
@@ -208,16 +262,16 @@ app.prepare()
   }
 
   joinedRoom = (socket) => {
-    if (userList.find(x => x.id === socket.id)) {
-      let room = userList.find(x => x.id === socket.id).room;
+    let user = userList.find(x => x.id === socket.id);
+    if (user) {
+      let room = user.room;
       if (room !== undefined) {
-        if(!Object.values(socket.rooms).includes(room)) {
-          socket.leave('lobby');
-          socket.join(room);
-        }
+        socket.leave('lobby');
+        socket.join(room);
 
         roomData = roomList.find(x => x.room === room);
         if (roomData && roomData.story) {
+          roomData.story.no_cooldown = true;
           socket.emit('story-loaded', roomData.story);
         }
 
@@ -258,7 +312,7 @@ app.prepare()
 
   createUser = (socketId) => {
     if (!userList.find(x => x.id === socketId)) {
-      userList.push({ id: socketId, data: { point: '' } });
+      userList.push({ id: socketId, data: { point: '', voting: true } });
     }
   }
 
