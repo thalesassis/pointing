@@ -104,15 +104,25 @@ app.prepare()
 
     socket.on('leave-room', () => {
       let user = userList.find(x => x.id === socket.id);
-      if (user) {
-        socket.leave(user.room);
-        user.room = undefined;
-        user.data.point = undefined;
-        user.data.vote = undefined;
-        user.data.voting = undefined;
-        socket.join('lobby');
-        socket.emit('goto-index');
+      let room = user.room;
+
+      socket.leave(room);
+      user.room = undefined;
+      user.data.point = undefined;
+      user.data.vote = undefined;
+      user.data.voting = undefined;
+      socket.join('lobby');
+
+      let usersInRoom = userList.find(x => x.room === room);
+      if (usersInRoom === undefined) {
+        sendRoomsToLobby();
       }
+
+      let roomUsers = userList.filter(x => x.room === room);
+      io.to(room).emit('room-users', JSON.stringify({...roomUsers}));
+      io.to(room).emit('update-votes');
+
+      socket.emit('goto-index');
     })
 
     socket.on('join-room', (data) => {
