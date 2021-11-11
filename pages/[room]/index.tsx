@@ -274,6 +274,8 @@ const Room = (props) => {
 
 
   return (
+    <>
+    <title>Dundies Symple Points</title>
     <main>
       <div className="card-logo enlarge">
         <span><i>D</i></span>
@@ -451,6 +453,7 @@ const Room = (props) => {
       </div>
       </div>
     </main>
+    </>
   );
 }
 
