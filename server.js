@@ -21,8 +21,7 @@ app.prepare()
     http = require('http').createServer(server);
   }
   
-  const io = require('socket.io')(http);
-  io.set('transports', ['websocket']);
+  const io = require('socket.io')(http, { transports: ['websocket'] });
 
   let roomList = [];
   let userList = [];
