@@ -5,7 +5,7 @@ import socketContext from '../context/socketContext';
 import Cookies from 'js-cookie';;
 import { io } from "socket.io-client";
 
-const socket = io();
+const socket = io({transports: ['websocket']});
 
 let userCookie = Cookies.get("user-token");
 socket.emit('user-token', userCookie);
