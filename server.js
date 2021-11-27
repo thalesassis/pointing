@@ -109,8 +109,8 @@ app.prepare()
         if (!usersInRoom) {
           sendRoomsToLobby();
         } else {
-          io.to(room).emit('room-users', JSON.stringify({...usersInRoom}));
-          io.to(room).emit('update-votes');          
+          io.to(roomData.room).emit('room-users', JSON.stringify({...usersInRoom}));
+          io.to(roomData.room).emit('update-votes');          
         }
 
         socket.emit('goto-index');
@@ -244,20 +244,16 @@ app.prepare()
     });
 
     socket.on('disconnect', () => {
-        let roomData = getUserRoom(socket);
-        if (roomData) {
-          setTimeout(() => {
-              let roomData = getUserRoom(socket);
-              if (roomData) {
-                let usersInRoom = getUsersInRoom(roomData.room);
-                if (!usersInRoom) {
-                  sendRoomsToLobby();
-                }
+        handleDisconnection(socket);
+    });
 
-                io.to(roomData.room).emit('rejoin');
-              }
-          }, 3000);
-        }
+    socket.on('deluser', () => {
+      let users = _.cloneDeep(userList);
+      users = _.filter(userList, x => x.id != socket.id);
+      userList = users;
+
+      console.log('User deleted');
+      console.log(users);
     });
   });
 
@@ -268,7 +264,9 @@ app.prepare()
         return user;
       } else {
         createUser(socket);
-        getUser(socket);
+        updateRoomsUsers();
+        handleUserNotFound(socket);
+        return false;
       }
     } else {
       handleUserNotFound(socket);
@@ -326,6 +324,7 @@ app.prepare()
 
   handleUserNotFound = (socket) => {
     console.log("ERROR NOT FOUND");
+    socket.emit('goto-index');
   }
 
   sendRoomsToLobby = () => {
@@ -387,6 +386,27 @@ app.prepare()
   createUser = (socket) => {
     if (!userExists(socket)) {
       userList.push({ id: socket.id, room: undefined, data: { point: '', voting: true } });
+    }
+  }
+
+  updateRoomsUsers = () => {
+    io.emit('rejoin');
+  }
+
+  handleDisconnection = (socket) => {
+    let roomData = getUserRoom(socket);
+    if (roomData) {
+      setTimeout(() => {
+          let roomData = getUserRoom(socket);
+          if (roomData) {
+            let usersInRoom = getUsersInRoom(roomData.room);
+            if (!usersInRoom) {
+              sendRoomsToLobby();
+            }
+
+            io.to(roomData.room).emit('rejoin');
+          }
+      }, 3000);
     }
   }
 
