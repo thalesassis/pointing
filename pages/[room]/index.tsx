@@ -8,6 +8,7 @@ import { VscDebugRestart } from 'react-icons/vsc';
 import { BiDoorOpen, BiSad, BiSearchAlt } from 'react-icons/bi';
 import { usePageVisibility } from 'react-page-visibility';
 import ReactMarkdown from 'react-markdown';
+import Switch from "react-switch";
 
 const Room = (props) => {
   const socket = useContext(socketContext);
@@ -20,6 +21,8 @@ const Room = (props) => {
   const [pointList, setPointList] = useState({});
   const [myVote, setMyVote] = useState(null);
   const [revealVotes, setRevealVotes] = useState(false);
+  const [unrevealVotes, setUnrevealVotes] = useState(false);
+  const [revealedVotes, setRevealedVotes] = useState(false);
   const [whoVoted, setWhoVoted] = useState(null)
   const [whoVoting, setWhoVoting] = useState(null)
   const [storyId, setStoryId] = useState('');
@@ -51,10 +54,18 @@ const Room = (props) => {
       }
     })
 
+    listen("room-info", (data) => {
+      data = JSON.parse(data);
+      if (data.revealVotes) {
+        setRevealedVotes(true);
+      }
+    })
+
     listen("reset-votes", (data) => {
       setMyVote(null);
       let resetedUserList = JSON.parse(data);
       setNewUserList(resetedUserList);
+      setRevealedVotes(false);
     })
 
     listen("room-points", (data) => {
@@ -77,6 +88,12 @@ const Room = (props) => {
 
     listen("reveal-votes", (data) => {      
       setRevealVotes(true);
+      setRevealedVotes(true);
+    })
+
+    listen("unreveal-votes", (data) => {
+      setRevealedVotes(false);
+      setUnrevealVotes(true);
     })
 
     listen("update-votes", (data) => {      
@@ -201,6 +218,13 @@ const Room = (props) => {
 
 
   useEffect(() => {
+    if (unrevealVotes) {
+      socket.emit("voted", myVote);
+      setUnrevealVotes(false);
+    }
+  }, [unrevealVotes])
+
+  useEffect(() => {
     if (storyCooldown) {
       setStoryCooldown(false);
       setFindStoryDisabled(true);
@@ -247,7 +271,11 @@ const Room = (props) => {
   }
 
   const revealVotesAction = () => {
-    socket.emit("reveal-votes");
+    if (!revealedVotes) {
+      socket.emit("reveal-votes");
+    } else {
+      socket.emit("unreveal-votes");
+    }
   }
   const resetVotesAction = () => {
     socket.emit("reset-votes");
@@ -417,7 +445,10 @@ const Room = (props) => {
             {!(Object.values(userList).find((x: any) => x.name != undefined) == undefined) &&
               <div className="pointing-actions">
                 <button className="action danger fleft" onClick={() => { resetVotesAction() }}><VscDebugRestart />Reset</button> 
-                <button className="action secondary fright" onClick={() => { revealVotesAction() }}><AiOutlineEye />Reveal votes</button> 
+                <div className="action secondary fright switchToggle" onClick={() => { revealVotesAction() }}>
+                  <label><Switch width={35} checkedIcon={false} uncheckedIcon={false} handleDiameter={20} height={20} className="toggle" onChange={revealVotesAction} checked={revealedVotes} />
+                  Reveal votes</label>
+                </div> 
               </div>
             }
           </div>

@@ -36,7 +36,7 @@ input {
   border-radius: 5px;
 }
 
-button.action {
+button.action, div.action {
   @include font('Roboto');
   display: block;
   font-size: 14px;
@@ -86,6 +86,20 @@ button.action {
 
     &:hover {
       background: lighten($danger, 5%);
+    }
+  }
+
+  &.switchToggle {
+    padding: 7px 20px 7px 50px;
+    position: relative;
+    .toggle {
+      position: absolute!important;
+      left: 7px;
+      top: 5px;
+    }
+
+    label {
+      cursor: pointer;
     }
   }
 

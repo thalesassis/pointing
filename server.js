@@ -5,6 +5,8 @@ const app = next({ dev })
 const _ = require('lodash');
 const handle = app.getRequestHandler()
 const axios = require('axios');
+
+//TODO: check all user actions - test as if user didnt exist
     
 app.prepare()
 .then(() => {
@@ -27,9 +29,6 @@ app.prepare()
   let userList = [];
   let pointList = ['0','1','2','3','5','8','?'];
   let userPoints = [];
-  let revealVotes = false;
-  let storyLoading = false;
-  let storyRefreshTime = 5000;
 
   server.get('*', (req, res) => {
     return handle(req, res);
@@ -45,13 +44,6 @@ app.prepare()
 
     socket.on('user-token', (data) => {
 
-      connectedSockets = io.of('/').sockets;
-      for (let [key, val] of connectedSockets) {
-        if (!userList.find(x => x.id === val.id)) {
-          userList = userList.filter(x => x.id !== val.id);
-        }
-      }
-
       handleRefresh(socket, data);      
 
       connectedSockets = io.of('/').sockets;
@@ -60,8 +52,6 @@ app.prepare()
           userList = userList.filter(x => x.id !== val.id);
         }
       }
-
-      console.log(userList);
     });
 
     socket.on('lobby', () => {
@@ -70,78 +60,80 @@ app.prepare()
     })
 
     socket.on('get-story', (storyId) => {
-      let room = userList.find(x => x.id === socket.id).room;
-      io.to(room).emit('story-loading', true);
-      storyLoading = true;
-      axios.get('https://www.pivotaltracker.com/services/v5/projects/2434677/stories/' + storyId.replace("#",""), {
-        headers: {
-          'X-TrackerToken': process.env.PT_TOKEN
-        }
-      })
-      .then(story => {          
-        let user = userList.find(x => x.id === socket.id);
-        if (user.room) {
-          roomList.find(x => x.room === user.room).story = story.data;
-          io.to(user.room).emit('story-loaded', story.data);
-        }
-        storyLoading = false;
-
-      }).catch(e => {
-        io.to(room).emit('story-404');
-        storyLoading = false;
-      })
+      let roomData = getUserRoom(socket);
+      if (roomData) {
+        io.to(roomData.room).emit('story-loading', true);
+        roomData.storyLoading = true;
+        axios.get('https://www.pivotaltracker.com/services/v5/projects/2434677/stories/' + storyId.replace("#",""), {
+          headers: {
+            'X-TrackerToken': process.env.PT_TOKEN
+          }
+        })
+        .then(story => {          
+          let roomData = getUserRoom(socket);
+          if (roomData) {
+            roomData.story = story.data;
+            io.to(roomData.room).emit('story-loaded', story.data);
+            roomData.storyLoading = false;
+          }
+        }).catch(e => {
+          io.to(roomData.room).emit('story-404');
+          roomData.storyLoading = false;
+        })
+      }
       
       
     })
 
     socket.on('close-story', () => {
-      let user = userList.find(x => x.id === socket.id);
-      if (user.room) {
-        roomList.find(x => x.room === user.room).story = { id: '', url: '', name: '', description: '' };
-        io.to(user.room).emit('close-story');
+      let roomData = getUserRoom(socket);
+      if (roomData) {
+        roomData.story = { id: '', url: '', name: '', description: '' };
+        io.to(roomData.room).emit('close-story');
       }
     });
 
     socket.on('leave-room', () => {
-      let user = userList.find(x => x.id === socket.id);
-      let room = user.room;
+      let user = getUser(socket);
+      let roomData = getUserRoom(socket);
 
-      socket.leave(room);
-      user.room = undefined;
-      user.data.point = undefined;
-      user.data.vote = undefined;
-      user.data.voting = undefined;
-      socket.join('lobby');
+      if (user && roomData) {
+        socket.leave(roomData.room);
+        user.room = undefined;
+        user.data.point = undefined;
+        user.data.vote = undefined;
+        user.data.voting = undefined;
+        socket.join('lobby');
 
-      let usersInRoom = userList.find(x => x.room === room);
-      if (usersInRoom === undefined) {
-        sendRoomsToLobby();
+        let usersInRoom = getUsersInRoom(roomData.room);
+        if (!usersInRoom) {
+          sendRoomsToLobby();
+        } else {
+          io.to(room).emit('room-users', JSON.stringify({...usersInRoom}));
+          io.to(room).emit('update-votes');          
+        }
+
+        socket.emit('goto-index');
       }
-
-      let roomUsers = userList.filter(x => x.room === room);
-      io.to(room).emit('room-users', JSON.stringify({...roomUsers}));
-      io.to(room).emit('update-votes');
-
-      socket.emit('goto-index');
     })
 
-    socket.on('join-room', (data) => {
-      createRoom(socket, data);
+    socket.on('join-room', (roomName) => {
       socket.leave('lobby');
-      socket.join(data);
-      let user = userList.find(x => x.id === socket.id);
+      let user = getUser(socket);
       if (user) {
-        if (!userList.find(x => x.room === data)) {
+        let usersInRoom = getUsersInRoom(roomName);
+        if (!usersInRoom) {
           user.host = true;
         }
-        user.room = data;
+        createRoom(socket, roomName);
+        user.room = roomName;
+        sendRoomsToLobby();
       }
-      sendRoomsToLobby();
     });
 
     socket.on('is-voting', (val) => {
       if (val !== null) {
-        let user = userList.find(x => x.id === socket.id);
+        let user = getUser(socket);
         if (user) {
           user.data.voting = val;
           io.to(user.room).emit('someone-voting', JSON.stringify({ id: socket.id, status: val }));
@@ -150,7 +142,7 @@ app.prepare()
     })
 
     socket.on('update-is-voting', () => {
-      let user = userList.find(x => x.id === socket.id);
+      let user = getUser(socket);
       if (user) {
         io.to(user.room).emit('update-is-voting');
       }
@@ -158,22 +150,21 @@ app.prepare()
 
     socket.on('voted', (val) => {
       if (val !== null) {
-        let user = userList.find(x => x.id === socket.id);
-        if (user) {
+        let user = getUser(socket);
+        let roomData = getUserRoom(socket);
+        if (user && roomData) {
           let pointVal = val === 'Not voted' ? val : 'Voted';
-          let unflip = false;
-          if (revealVotes) {
+          if (roomData.revealVotes) {
             pointVal = val;
-            unflip = true;
           }
-          userList.find(x => x.id === socket.id).data.vote = val;
-          socket.broadcast.to(user.room).emit('someone-voted', JSON.stringify({ id: socket.id, vote: pointVal, flipEffect: true, unflip: unflip }));
+          user.data.vote = val;
+          socket.broadcast.to(roomData.room).emit('someone-voted', JSON.stringify({ id: socket.id, vote: pointVal }));
         }
       }
     })
 
     socket.on('user-name', (val) => {
-      let user = userList.find(x => x.id === socket.id);
+      let user = getUser(socket);
       if (user) {
         user.name = val;
         joinedRoom(socket);
@@ -185,15 +176,16 @@ app.prepare()
     })
 
     socket.on('check-room-exists', (roomName) => {
+      //null means its coming from index
       //if user already in a room, force him to that room
       //if user access a room through url, check if it exists
       let gotoIndex = false;
-      let rooms = userList.find(x => x.id === socket.id);
-      if (rooms && rooms.room !== undefined) {
+      let user = getUser(socket);
+      if (user && user.room !== undefined) {
         //user already in a room? send him to his room
-        if (rooms.room != roomName) {
-          socket.emit('goto-room', rooms.room);
-          socket.join(rooms.room);
+        if (user.room != roomName) {
+          socket.emit('goto-room', user.room);
+          socket.join(user.room);
         }
       } else {
         //user joining a room
@@ -203,10 +195,10 @@ app.prepare()
             gotoIndex = true;
           }
 
-          if (userList.find(x => x.room === roomName)) { //room exists?
+          if (roomExists(roomName)) { //room exists?
             socket.leave('lobby');
             socket.join(roomName);
-            let user = userList.find(x => x.id === socket.id);
+            let user = getUser(socket);
             if (user) {
               user.room = roomName;
             }
@@ -223,46 +215,118 @@ app.prepare()
     });
 
     socket.on('reveal-votes', () => {
-      revealVotes = true;
-      let user = userList.find(x => x.id === socket.id);
-      if (user) {
-        io.to(user.room).emit('reveal-votes');
+      let roomData = getUserRoom(socket);
+      if (roomData) {
+        roomData.revealVotes = true;
+        io.to(roomData.room).emit('reveal-votes');
+      }
+    });
+
+    socket.on('unreveal-votes', () => {
+      let roomData = getUserRoom(socket);
+      if (roomData) {
+        roomData.revealVotes = false;
+        io.to(roomData.room).emit('unreveal-votes');
       }
     });
 
     socket.on('reset-votes', () => {
-      revealVotes = false;
-      let user = userList.find(x => x.id === socket.id);
-      if (user) {
-        let roomUsers = userList.filter(x => x.room === user.room);
+      let roomData = getUserRoom(socket);
+      if (roomData) {
+        roomData.revealVotes = false;
+        let roomUsers = getUsersInRoom(roomData.room);
         for (r of roomUsers) {
           r.data.point = '';
           if (r.data.vote) { delete r.data.vote; }
         }
-        io.to(user.room).emit('reset-votes', JSON.stringify({...roomUsers}))
+        io.to(roomData.room).emit('reset-votes', JSON.stringify({...roomUsers}))
       }
     });
 
     socket.on('disconnect', () => {
-        if (userList.find(x => x.id === socket.id)) {
-          let room = userList.find(x => x.id === socket.id).room;
+        let roomData = getUserRoom(socket);
+        if (roomData) {
           setTimeout(() => {
-
-              if (userList.find(x => x.id === socket.id)) {
-                userList = userList.filter(x => x.id !== socket.id);
-
-                let usersInRoom = userList.find(x => x.room === room);
-                if (usersInRoom === undefined) {
+              let roomData = getUserRoom(socket);
+              if (roomData) {
+                let usersInRoom = getUsersInRoom(roomData.room);
+                if (!usersInRoom) {
                   sendRoomsToLobby();
                 }
 
-                io.to(room).emit('rejoin');
+                io.to(roomData.room).emit('rejoin');
               }
-
           }, 3000);
         }
     });
   });
+
+  getUser = (socket) => {
+    if (socket !== undefined) {
+      let user = userList.find(x => x.id === socket.id);
+      if (user) {
+        return user;
+      } else {
+        createUser(socket);
+        getUser(socket);
+      }
+    } else {
+      handleUserNotFound(socket);
+      return false;
+    }
+  }
+
+  getUserRoom = (socket) => {
+    if (socket !== undefined) {
+      let user = getUser(socket);
+      if (user && user.room) {
+        let roomData = roomList.find(x => x.room === user.room);
+        if (roomData) {
+          return roomData;
+        } else {
+          handleUserNotFound(socket);
+          return false;
+        }
+      } else {
+        handleUserNotFound(socket);
+        return false;
+      }
+    } else {
+      handleUserNotFound(socket);
+      return false;
+    }
+  }
+
+  getUsersInRoom = (roomName) => {
+    let usersInRoom = userList.filter(x => x.room === roomName);
+    if (usersInRoom) {
+      return usersInRoom;
+    } else {
+      return false;
+    }
+  }
+
+  userExists = (socket) => {
+    let user = userList.find(x => x.id === socket.id);
+    if (user) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  roomExists = (roomName) => {
+    let roomUsers = userList.find(x => x.room === roomName);
+    if (roomUsers !== undefined) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  handleUserNotFound = (socket) => {
+    console.log("ERROR NOT FOUND");
+  }
 
   sendRoomsToLobby = () => {
     let rooms = _.cloneDeep(userList);
@@ -272,23 +336,23 @@ app.prepare()
   }
 
   joinedRoom = (socket) => {
-    let user = userList.find(x => x.id === socket.id);
+    let user = getUser(socket);       
+    console.log("joining room");
+    console.log(user);
     if (user) {
       let room = user.room;
       if (room !== undefined) {
         socket.leave('lobby');
         socket.join(room);
-
-        roomData = roomList.find(x => x.room === room);
+        
+        let roomData = getUserRoom(socket);
         if (roomData && roomData.story) {
           roomData.story.no_cooldown = true;
           socket.emit('story-loaded', roomData.story);
         }
 
         let roomUsers = _.cloneDeep(userList);
-        roomUsers = roomUsers.filter(x => x.room === room);
-        let user = userList.find(x => x.id === socket.id);
-
+        roomUsers = getUsersInRoom(room);
         //Remove votes from array
         for (r of roomUsers) {
           if (r.data.vote) {
@@ -296,6 +360,7 @@ app.prepare()
           }
         }
         io.to(room).emit('room-users', JSON.stringify({...roomUsers}));
+        io.to(room).emit('room-info', JSON.stringify({...roomData}));
 
         //Recover user vote
         if (user.data.vote !== undefined) {
@@ -315,14 +380,13 @@ app.prepare()
 
     let room = roomList.find(x => x.room === roomName);
     if (!room) {
-      roomList.push({ room: roomName, story: [], users: [] });
-      room = roomList.find(x => x.room === roomName);
+      roomList.push({ room: roomName, storyLoading: false, revealVotes: false, story: [], users: [] });
     }
   }
 
-  createUser = (socketId) => {
-    if (!userList.find(x => x.id === socketId)) {
-      userList.push({ id: socketId, data: { point: '', voting: true } });
+  createUser = (socket) => {
+    if (!userExists(socket)) {
+      userList.push({ id: socket.id, room: undefined, data: { point: '', voting: true } });
     }
   }
 
@@ -342,7 +406,7 @@ app.prepare()
 
     if (newUser) {
       socket.emit("user-token", socket.id);
-      createUser(socket.id);
+      createUser(socket);
     }
   }
 

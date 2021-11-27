@@ -1,11 +1,11 @@
 import '../styles/globals.scss'
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { AppProps /*, AppContext */ } from 'next/app'
 import socketContext from '../context/socketContext';
 import Cookies from 'js-cookie';;
 import { io } from "socket.io-client";
 
-const socket = io({transports: ['websocket']});
+const socket = io(process.env.WEBSOCKET_SERVER, {transports: ['websocket']});
 
 let userCookie = Cookies.get("user-token");
 socket.emit('user-token', userCookie);
