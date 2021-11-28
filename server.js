@@ -28,7 +28,7 @@ app.prepare()
   let roomList = [];
   let userList = [];
   let pointList = ['0','1','2','3','5','8','?'];
-  let userPoints = [];
+  let actionTimeout = 360000000;
 
   server.get('*', (req, res) => {
     return handle(req, res);
@@ -38,6 +38,21 @@ app.prepare()
     if (err) throw err
     console.log('> Ready')
   })
+
+  setInterval(() => {
+    _.each(userList, (u) => {
+      let inactiveTime = Date.now() - u.lastAction;
+      if (inactiveTime >= actionTimeout) {
+        u.expired = true;
+      }
+    })
+
+    let hasExpired = userList.find(x => x.expired);
+    if (hasExpired) {
+      userList = userList.filter(x => !x.expired)
+      updateRoomsUsers();
+    }
+  }, ((actionTimeout/2) + 5000));
 
   io.on('connection', (socket) => {
     //console.log('a user connected ' + socket.id);
@@ -261,6 +276,7 @@ app.prepare()
     if (socket !== undefined) {
       let user = userList.find(x => x.id === socket.id);
       if (user) {
+        user.lastAction = Date.now();
         return user;
       } else {
         createUser(socket);
@@ -385,7 +401,7 @@ app.prepare()
 
   createUser = (socket) => {
     if (!userExists(socket)) {
-      userList.push({ id: socket.id, room: undefined, data: { point: '', voting: true } });
+      userList.push({ id: socket.id, room: undefined, expired: false, lastAction: Date.now(), data: { point: '', voting: true } });
     }
   }
 
