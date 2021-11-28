@@ -28,7 +28,7 @@ app.prepare()
   let roomList = [];
   let userList = [];
   let pointList = ['0','1','2','3','5','8','?'];
-  let actionTimeout = 360000000;
+  let actionTimeout = 60 * 60000;
 
   server.get('*', (req, res) => {
     return handle(req, res);
