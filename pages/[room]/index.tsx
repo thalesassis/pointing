@@ -540,7 +540,7 @@ const Room = (props) => {
               <div className="most-voted fadeInSlow">
                 <h3 className="mb-0">Most Voted: </h3>
                 <ul>
-                  {mostVoted(userList).map((val: any) => {
+                  {mostVoted().map((val: any) => {
                     return val.point > 0 && <li key={val.label} style={{ width: val.width + '%' }}>
                       <div className="card shadow" style={{ transform: 'scale('+ val.scale + ')' }}>{val.label}</div>
                     </li>

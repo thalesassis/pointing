@@ -1,5 +1,5 @@
 import '../styles/globals.scss'
-import { useEffect, useState, async } from "react";
+import { useEffect, useState } from "react";
 import type { AppProps /*, AppContext */ } from 'next/app'
 import socketContext from '../context/socketContext';
 import Cookies from 'js-cookie';
