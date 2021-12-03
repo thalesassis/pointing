@@ -39,6 +39,7 @@ app.prepare()
     console.log('> Ready')
   })
 
+  /*
   setInterval(() => {
     _.each(userList, (u) => {
       let inactiveTime = Date.now() - u.lastAction;
@@ -53,20 +54,27 @@ app.prepare()
       updateRoomsUsers();
     }
   }, ((actionTimeout/2) + 5000));
+  
+
+
+  setInterval(() => {
+    console.log("[==========="+ new Date().toISOString() +"============]");
+    connectedSockets = io.sockets.sockets;
+    for (let [key, val] of connectedSockets) {
+      console.log(val.id);
+    }
+    console.log(userList);
+  }, 10000);
+  */
 
   io.on('connection', (socket) => {
     //console.log('a user connected ' + socket.id);
 
     socket.on('user-token', (data) => {
-
       handleRefresh(socket, data);      
+      removeUnusedSockets(io);
 
-      connectedSockets = io.of('/').sockets;
-      for (let [key, val] of connectedSockets) {
-        if (!userList.find(x => x.id === val.id)) {
-          userList = userList.filter(x => x.id !== val.id);
-        }
-      }
+      //console.log(userList);
     });
 
     socket.on('lobby', () => {
@@ -96,8 +104,6 @@ app.prepare()
           roomData.storyLoading = false;
         })
       }
-      
-      
     })
 
     socket.on('close-story', () => {
@@ -115,7 +121,7 @@ app.prepare()
       if (user && roomData) {
         socket.leave(roomData.room);
         user.room = undefined;
-        user.data.point = undefined;
+        user.data.point = '';
         user.data.vote = undefined;
         user.data.voting = undefined;
         socket.join('lobby');
@@ -174,6 +180,10 @@ app.prepare()
           }
           user.data.vote = val;
           socket.broadcast.to(roomData.room).emit('someone-voted', JSON.stringify({ id: socket.id, vote: pointVal }));
+        } else {
+          createUser(socket);
+          io.emit('rejoin');
+          socket.emit('check-room-exists');
         }
       }
     })
@@ -190,7 +200,15 @@ app.prepare()
       joinedRoom(socket);
     })
 
-    socket.on('check-room-exists', (roomName) => {
+    socket.on('check-room-exists', (obj) => {
+      obj = JSON.parse(obj);
+      let roomName = obj.roomName;
+      let userToken = userList.find(x => x.id == obj.token);
+      if (userToken) {
+        userToken.id = socket.id;
+      }
+
+      removeUnusedSockets(io);
       //null means its coming from index
       //if user already in a room, force him to that room
       //if user access a room through url, check if it exists
@@ -259,7 +277,7 @@ app.prepare()
     });
 
     socket.on('disconnect', () => {
-        handleDisconnection(socket);
+      handleDisconnection(socket);
     });
 
     socket.on('deluser', () => {
@@ -267,8 +285,8 @@ app.prepare()
       users = _.filter(userList, x => x.id != socket.id);
       userList = users;
 
-      console.log('User deleted');
-      console.log(users);
+      //console.log('User deleted');
+      //console.log(users);
     });
   });
 
@@ -279,8 +297,7 @@ app.prepare()
         user.lastAction = Date.now();
         return user;
       } else {
-        createUser(socket);
-        updateRoomsUsers();
+        //socket.emit('refresh');
         handleUserNotFound(socket);
         return false;
       }
@@ -339,8 +356,8 @@ app.prepare()
   }
 
   handleUserNotFound = (socket) => {
-    console.log("ERROR NOT FOUND");
-    socket.emit('goto-index');
+    //console.log("ERROR NOT FOUND");
+    //socket.emit('goto-index');
   }
 
   sendRoomsToLobby = () => {
@@ -352,8 +369,6 @@ app.prepare()
 
   joinedRoom = (socket) => {
     let user = getUser(socket);       
-    console.log("joining room");
-    console.log(user);
     if (user) {
       let room = user.room;
       if (room !== undefined) {
@@ -367,23 +382,27 @@ app.prepare()
         }
 
         let roomUsers = _.cloneDeep(userList);
-        roomUsers = getUsersInRoom(room);
-        //Remove votes from array
-        for (r of roomUsers) {
-          if (r.data.vote) {
-            delete r.data.vote;
+        roomUsers = roomUsers.filter(x => x.room === room);
+        //Remove votes from cloned array to re-emit to everyone else
+        //(cannot send 'vote' because this is just for temporary storing)
+        if (roomUsers) {
+          for (r of roomUsers) {
+            if (r.data.vote) {
+              delete r.data.vote;
+            }
           }
         }
+
         io.to(room).emit('room-users', JSON.stringify({...roomUsers}));
         io.to(room).emit('room-info', JSON.stringify({...roomData}));
+
+        io.to(room).emit('update-votes');
+        io.to(room).emit('room-points', JSON.stringify({...pointList}));
 
         //Recover user vote
         if (user.data.vote !== undefined) {
           socket.emit('recover-vote', user.data.vote);
         }
-
-        io.to(room).emit('update-votes');
-        io.to(room).emit('room-points', JSON.stringify({...pointList}));
       } else {
         socket.emit('goto-index');
       }
@@ -409,27 +428,28 @@ app.prepare()
     io.emit('rejoin');
   }
 
-  handleDisconnection = (socket) => {
-    let roomData = getUserRoom(socket);
-    if (roomData) {
+  handleDisconnection = (socket) => { 
+    let user = getUser(socket);
+    if (user) {
       setTimeout(() => {
-          let roomData = getUserRoom(socket);
-          if (roomData) {
-            let usersInRoom = getUsersInRoom(roomData.room);
-            if (!usersInRoom) {
-              sendRoomsToLobby();
-            }
-
-            io.to(roomData.room).emit('rejoin');
+        let user = getUser(socket);
+        if (user) {
+          let usersInRoom = getUsersInRoom(user.room);
+          if (!usersInRoom) {
+            sendRoomsToLobby();
           }
+          if (user.room) {
+            //io.to(user.room).emit('rejoin');
+          }
+        }
       }, 3000);
     }
   }
 
   handleRefresh = (socket, userToken) => {
     let newUser = false;
-    if (userToken) {
-      let user = userList.find(x => x.id === userToken);
+    if (!_.isNull(userToken)) {
+      let user = userList.find(x => x.id == userToken);
       if (user) {
         user.id = socket.id;
         socket.emit("user-token", socket.id);
@@ -446,5 +466,14 @@ app.prepare()
     }
   }
 
+  removeUnusedSockets = (io) => {
+    connectedSockets = io.sockets.sockets;
+    for (let [key, val] of connectedSockets) {
+      if (!userList.find(x => x.id == val.id)) {
+        ul = _.cloneDeep(userList);
+        userList = ul.filter(x => x.id !== val.id);
+      }
+    }
+  }
 
 })

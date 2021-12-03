@@ -2,7 +2,7 @@ import React, { Component, useEffect, useState, useContext, useRef } from "react
 import { withRouter } from 'next/router';
 import socketContext from '../context/socketContext';
 import { useBeforeunload } from 'react-beforeunload';
-
+import Cookies from 'js-cookie';
 
 const Home = (props) => {
   const socket = useContext(socketContext);
@@ -14,7 +14,7 @@ const Home = (props) => {
   useEffect(() => {
     isRendered = true;
 
-    socket.emit('check-room-exists', null);
+    socket.emit('check-room-exists', JSON.stringify({ roomName: null, token: Cookies.get("user-token") }));
     socket.emit('lobby');
 
     const listen = (message, func) => {

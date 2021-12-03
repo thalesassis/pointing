@@ -9,6 +9,7 @@ import { BiDoorOpen, BiSad, BiSearchAlt } from 'react-icons/bi';
 import { usePageVisibility } from 'react-page-visibility';
 import ReactMarkdown from 'react-markdown';
 import Switch from "react-switch";
+import Cookies from 'js-cookie';
 
 const Room = (props) => {
   const socket = useContext(socketContext);
@@ -20,6 +21,7 @@ const Room = (props) => {
   const [newUserList, setNewUserList] = useState({});
   const [pointList, setPointList] = useState({});
   const [myVote, setMyVote] = useState(null);
+  const [recoverVote, setRecoverVote] = useState(null);
   const [revealVotes, setRevealVotes] = useState(false);
   const [unrevealVotes, setUnrevealVotes] = useState(false);
   const [revealedVotes, setRevealedVotes] = useState(false);
@@ -32,6 +34,7 @@ const Room = (props) => {
   const [findStoryLabel, setFindStoryLabel] = useState('Load Story');
   const [findStoryDisabled, setFindStoryDisabled] = useState(false);
   const [storyCooldown, setStoryCooldown] = useState(false);
+  const [refresh, setRefresh] = useState(false);
   let isRendered = false;
 
   const isVisible = usePageVisibility();
@@ -47,7 +50,8 @@ const Room = (props) => {
 
     listen("room-users", (data) => {
       data = JSON.parse(data);
-      setUserList(data);
+      console.log("users changing");
+      setNewUserList(data);
       let user = _.find(data, x => x.id === socket.id);
       if (user !== undefined && user.name) {
         setUserName(user.name);
@@ -101,7 +105,7 @@ const Room = (props) => {
     })
 
     listen("recover-vote", (data) => {
-      setMyVote(data);
+      setRecoverVote(data);
     })
 
     listen("rejoin", (data) => {
@@ -118,6 +122,10 @@ const Room = (props) => {
 
     listen("story-loading", (data) => { 
       setStoryLoading(data);     
+    })
+
+    listen("refresh", (data) => { 
+      setRefresh(true);     
     })
 
     listen("story-loaded", (story) => {      
@@ -141,40 +149,62 @@ const Room = (props) => {
       setStory({ id: '', url: '', name: '', description: '' });
     })
 
+    listen("check-room-exists", () => {
+      socket.emit('check-room-exists', JSON.stringify({ roomName: null, token: Cookies.get("user-token") }));
+    })
+
     return () => {
       isRendered = false;
     };
   }, [])
 
-
   useEffect(() => {
     const room = props.router.query.room;
     if (room) {
-      socket.emit('check-room-exists', room);
+      socket.emit('check-room-exists', JSON.stringify({ roomName: room, token: Cookies.get("user-token") }));
     }
   }, [props.router.query])
 
   useEffect(() => {
-    /*
+    let change = false;
+    console.log(userList);
+    console.log(newUserList);
     _.each(newUserList, (ul) => {
       let usr = _.find(userList, x => x.id === ul.id);
-      ul.data.voting = usr.data.voting;
-    })
-    */
+      if (usr) {
+        if (usr.data.point != ul.data.point) {
+          change = true;
+        }
+      }
 
-    setUserList(newUserList);
+      if (usr == undefined) {
+        change = true;
+      }
+    })
+
+    console.log(change);
+    
+    if (change) {
+      setUserList(newUserList);
+    }
   }, [newUserList])  
 
   useEffect(() => {
     if (whoVoted) {
       let userListPointed = _.cloneDeep(userList);
+      let changed = false;
       let u = _.find(userListPointed, x => x.id === whoVoted.id);
       if (u) {
-        u.data.point = whoVoted.vote;
-        u.data.flipEffect = true;
+        if (u.data.point != whoVoted.vote) {
+          u.data.point = whoVoted.vote;
+          changed = true;
+        }
       }
 
-      setUserList(userListPointed);
+      if (changed) {
+        console.log("votes changing");
+        setUserList(userListPointed);
+      }
     }
   }, [whoVoted])
 
@@ -223,6 +253,17 @@ const Room = (props) => {
       setUnrevealVotes(false);
     }
   }, [unrevealVotes])
+
+  useEffect(() => {
+    vote(recoverVote);
+  }, [recoverVote])
+
+  useEffect(() => {
+    if (refresh) {
+      setRefresh(false);
+      window.location.reload();
+    }
+  }, [refresh])
 
   useEffect(() => {
     if (storyCooldown) {
@@ -299,6 +340,47 @@ const Room = (props) => {
     e.preventDefault();
     socket.emit("close-story");
   }
+  const delUser = (e) => {
+    e.preventDefault();
+    console.log("delUser");
+    socket.emit("deluser");
+  }
+  const mostVoted = () => {
+    let mostV = [];
+    let totalV = totalVotes();
+
+    Object.values(pointList).map((val: any) => {
+      mostV.push({
+        label: val,
+        point: 0
+      });
+    });
+
+    Object.values(userList).map((user: any) => {
+      if (user.data.point != undefined) {
+        let findLabel = _.find(mostV, x => x.label == user.data.point);
+        if (findLabel) {
+          findLabel.point++;
+        }
+      }
+    })
+
+    Object.values(mostV).map((most: any) => {
+      most.width = most.point * (100 / totalV);
+      most.scale = most.point * (1.5 / totalV);
+    })
+    return mostV; 
+  }
+
+  const totalVotes = () => {
+    let votes = 0;
+    Object.values(userList).map((user: any) => {
+      if (user.data.point != undefined && user.data.point != 'Not voted' && user.data.point != 'Voted') {
+        votes++;
+      }
+    })
+    return votes;
+  }
 
 
   return (
@@ -369,11 +451,13 @@ const Room = (props) => {
 
 
           <div className="point">
-            <ul className="point-options">
-            {Object.values(pointList).map((val: any) => {
-              return <li key={val}><button className="shadow" onClick={() => { vote(val) }}>{val}</button></li>
-            })}
-            </ul>
+            {userName != '' &&
+              <ul className="point-options">
+              {Object.values(pointList).map((val: any) => {
+                return <li key={val}><button className="shadow" onClick={() => { vote(val) }}>{val}</button></li>
+              })}
+              </ul>
+            }
 
             <ul className="name-list">
             {Object.values(userList).map((val: any) => {
@@ -402,7 +486,7 @@ const Room = (props) => {
                   }
 
                   {val.data.point == 'Voted' &&
-                  <div className="vote-card fadeIn">
+                  <div className="vote-card">
                     <div className="inner">
                       <div className="front shadow">{val.data.point}</div>
                       <div className="back card-logo"><span><i>D</i></span></div>
@@ -449,6 +533,19 @@ const Room = (props) => {
                   <label><Switch width={35} checkedIcon={false} uncheckedIcon={false} handleDiameter={20} height={20} className="toggle" onChange={revealVotesAction} checked={revealedVotes} />
                   Reveal votes</label>
                 </div> 
+              </div>
+            }
+            <button className="action danger fleft" onClick={(e) => { delUser(e) }}><VscDebugRestart />AAA</button>
+            {revealedVotes && totalVotes() > 0 &&
+              <div className="most-voted fadeInSlow">
+                <h3 className="mb-0">Most Voted: </h3>
+                <ul>
+                  {mostVoted(userList).map((val: any) => {
+                    return val.point > 0 && <li key={val.label} style={{ width: val.width + '%' }}>
+                      <div className="card shadow" style={{ transform: 'scale('+ val.scale + ')' }}>{val.label}</div>
+                    </li>
+                  })}
+              </ul>
               </div>
             }
           </div>
