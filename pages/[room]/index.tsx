@@ -535,7 +535,6 @@ const Room = (props) => {
                 </div> 
               </div>
             }
-            <button className="action danger fleft" onClick={(e) => { delUser(e) }}><VscDebugRestart />AAA</button>
             {revealedVotes && totalVotes() > 0 &&
               <div className="most-voted fadeInSlow">
                 <h3 className="mb-0">Most Voted: </h3>
