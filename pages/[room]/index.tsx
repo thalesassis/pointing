@@ -35,6 +35,7 @@ const Room = (props) => {
   const [findStoryDisabled, setFindStoryDisabled] = useState(false);
   const [storyCooldown, setStoryCooldown] = useState(false);
   const [refresh, setRefresh] = useState(false);
+  const [flipAnimation, setFlipAnimation] = useState(false);
   let isRendered = false;
 
   const isVisible = usePageVisibility();
@@ -50,7 +51,6 @@ const Room = (props) => {
 
     listen("room-users", (data) => {
       data = JSON.parse(data);
-      console.log("users changing");
       setNewUserList(data);
       let user = _.find(data, x => x.id === socket.id);
       if (user !== undefined && user.name) {
@@ -66,9 +66,6 @@ const Room = (props) => {
     })
 
     listen("reset-votes", (data) => {
-      setMyVote(null);
-      let resetedUserList = JSON.parse(data);
-      setNewUserList(resetedUserList);
       setRevealedVotes(false);
     })
 
@@ -90,7 +87,9 @@ const Room = (props) => {
       socket.emit('is-voting', isVisible);
     })
 
-    listen("reveal-votes", (data) => {      
+    listen("reveal-votes", (data) => {     
+      setFlipAnimation(true); 
+      setTimeout(() => setFlipAnimation(false), 1000)
       setRevealVotes(true);
       setRevealedVotes(true);
     })
@@ -166,6 +165,8 @@ const Room = (props) => {
   }, [props.router.query])
 
   useEffect(() => {
+    setUserList(newUserList);
+    /*
     let change = false;
     console.log(userList);
     console.log(newUserList);
@@ -187,6 +188,7 @@ const Room = (props) => {
     if (change) {
       setUserList(newUserList);
     }
+    */
   }, [newUserList])  
 
   useEffect(() => {
@@ -221,13 +223,13 @@ const Room = (props) => {
 
   useEffect(() => {
     if (Object.keys(userList).length > 0 && myVote === null) {
-      vote('Not voted');
+      //vote('Not voted');
     }
   }, [userList])
 
   useEffect(() => {
     if (revealVotes) {
-      vote(myVote);
+      //vote(myVote);
       setRevealVotes(false);
     }
   }, [revealVotes])
@@ -477,7 +479,7 @@ const Room = (props) => {
                   }
 
                   {(socket.id != val.id) && val.data.point != 'Not voted' && val.data.point != 'Voted' &&
-                  <div className={`vote-card unflip`} >
+                  <div className={`vote-card ${flipAnimation ? "unflip" : "flipped"}`} >
                     <div className="inner">
                       <div className="front shadow">{val.data.point}</div>
                       <div className="back card-logo"><span><i>D</i></span></div>

@@ -121,9 +121,9 @@ app.prepare()
       if (user && roomData) {
         socket.leave(roomData.room);
         user.room = undefined;
-        user.data.point = '';
-        user.data.vote = undefined;
-        user.data.voting = undefined;
+        user.data.point = 'Not voted';
+        user.data.vote = 'Not voted';
+        user.data.voting = true;
         socket.join('lobby');
 
         let usersInRoom = getUsersInRoom(roomData.room);
@@ -185,6 +185,7 @@ app.prepare()
           io.emit('rejoin');
           socket.emit('check-room-exists');
         }
+        console.log(userList);
       }
     })
 
@@ -241,7 +242,6 @@ app.prepare()
           }
         }
       }
-
       if (!gotoIndex) {
         joinedRoom(socket);
       }
@@ -252,6 +252,7 @@ app.prepare()
       if (roomData) {
         roomData.revealVotes = true;
         io.to(roomData.room).emit('reveal-votes');
+        resendUsersVotes(roomData);
       }
     });
 
@@ -259,6 +260,7 @@ app.prepare()
       let roomData = getUserRoom(socket);
       if (roomData) {
         roomData.revealVotes = false;
+        resendUsersVotes(roomData);
         io.to(roomData.room).emit('unreveal-votes');
       }
     });
@@ -269,10 +271,11 @@ app.prepare()
         roomData.revealVotes = false;
         let roomUsers = getUsersInRoom(roomData.room);
         for (r of roomUsers) {
-          r.data.point = '';
+          r.data.point = 'Not voted';
           if (r.data.vote) { delete r.data.vote; }
         }
         io.to(roomData.room).emit('reset-votes', JSON.stringify({...roomUsers}))
+        resendUsersVotes(roomData);
       }
     });
 
@@ -380,33 +383,39 @@ app.prepare()
           roomData.story.no_cooldown = true;
           socket.emit('story-loaded', roomData.story);
         }
+        
+        resendUsersVotes(roomData);
 
-        let roomUsers = _.cloneDeep(userList);
-        roomUsers = roomUsers.filter(x => x.room === room);
-        //Remove votes from cloned array to re-emit to everyone else
-        //(cannot send 'vote' because this is just for temporary storing)
-        if (roomUsers) {
-          for (r of roomUsers) {
-            if (r.data.vote) {
-              delete r.data.vote;
-            }
-          }
-        }
-
-        io.to(room).emit('room-users', JSON.stringify({...roomUsers}));
         io.to(room).emit('room-info', JSON.stringify({...roomData}));
-
-        io.to(room).emit('update-votes');
         io.to(room).emit('room-points', JSON.stringify({...pointList}));
-
-        //Recover user vote
-        if (user.data.vote !== undefined) {
-          socket.emit('recover-vote', user.data.vote);
-        }
       } else {
         socket.emit('goto-index');
       }
     }
+  }
+
+  resendUsersVotes = (roomData) => {
+    _.each(userList, (u) => {
+      let roomUsers = _.cloneDeep(userList);
+      roomUsers = roomUsers.filter(x => x.room === roomData.room);
+      if (roomUsers) {
+        for (r of roomUsers) {
+          if (r.data.vote) {
+            if (roomData.revealVotes || r.id == u.id) {
+              r.data.point = r.data.vote;
+            } else {
+              if (r.data.vote != "Voted" && r.data.vote != "Not voted") {
+                r.data.point = "Voted";
+              } else {
+                r.data.point = r.data.vote;
+              }
+            }
+            delete r.data.vote;
+          }
+        }
+      }
+      io.to(u.id).emit('room-users', JSON.stringify({...roomUsers}));
+    })
   }
 
   createRoom = (socket, roomName) => {
@@ -420,7 +429,7 @@ app.prepare()
 
   createUser = (socket) => {
     if (!userExists(socket)) {
-      userList.push({ id: socket.id, room: undefined, expired: false, lastAction: Date.now(), data: { point: '', voting: true } });
+      userList.push({ id: socket.id, room: undefined, expired: false, lastAction: Date.now(), data: { point: 'Not voted', voting: true } });
     }
   }
 
