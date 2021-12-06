@@ -716,7 +716,7 @@ const Room = (props) => {
               }
             </div>
             <div className="discussion">
-              <div className="flex add-topic" onKeyUp={(e) => { e.keyCode == 13 ? addTopic() : null }}>
+              <div className="flex add-topic">
                 <Creatable
                   options={topicValues()} 
                   ref={(ref) => {
