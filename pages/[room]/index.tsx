@@ -71,7 +71,7 @@ const Room = (props) => {
   const [newUserList, setNewUserList] = useState({});
   const [pointList, setPointList] = useState({});
   const [topicList, setTopicList] = useState([]);
-  const [topicSelect, setTopicSelect] = useState([]);
+  const [topicSelect, setTopicSelect] = useState(null);
   const [newTopic, setNewTopic] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [removeTopic, setRemoveTopic] = useState(null);
@@ -522,7 +522,7 @@ const Room = (props) => {
     socket.emit('topic-discussed', { index: index, checked: val });
   }
 
-  const solvedTopics = (index, val) => {
+  const solvedTopics = () => {
     let solved = _.filter(topicList, x => x.checked).length;
     return solved;
   }
@@ -722,14 +722,12 @@ const Room = (props) => {
                   ref={(ref) => {
                     setTopicSelect(ref);
                   }}
-                  width="100%"
-                  onChange={(e) => setSelectedTopic(e)}  
-                  data={selectedTopic}
+                  onChange={(e) => setSelectedTopic(e)}
                   placeholder="Select or write a topic"
                   formatCreateLabel={(e) => { return e; }}
                   menuPosition="fixed"
                   menuPlacement="auto"
-                  menuShouldBlockScroll="true"
+                  menuShouldBlockScroll={true}
                   className="mr-10"
                 />
                 <button onClick={(e) => { addTopic() }} className="action icon-only"><AiOutlinePlus size={20} /></button>
@@ -740,7 +738,7 @@ const Room = (props) => {
 
                   {topicList.map((val: any) => {
                     return val.text && 
-                    <li onKeyUp={(e) => { e.keyCode == 13 ? topicDiscussedAction(val.index, !val.checked) : null }} key={val.index} tabIndex="0" className={`${val.checked ? "discussed" : ""} ${val.user ? "mb-25" : ""}`}>
+                    <li onKeyUp={(e) => { e.keyCode == 13 ? topicDiscussedAction(val.index, !val.checked) : null }} key={val.index} tabIndex={0} className={`${val.checked ? "discussed" : ""} ${val.user ? "mb-25" : ""}`}>
                       <label>
                         <div className="topic-discussed">
                           <Checkbox
@@ -773,7 +771,7 @@ const Room = (props) => {
               </div>  
 
               {topicList.length > 0 && 
-              <div class="discussion-actions">
+              <div className="discussion-actions">
                 <button className="action clear-topics danger fleft" onClick={() => { clearTopics() }}><VscDebugRestart />Clear topics</button> 
                 <div className="topic-count">{ solvedTopics() + ' / ' + topicList.length }</div>
               </div>}
