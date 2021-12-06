@@ -14,6 +14,8 @@ const Home = (props) => {
   useEffect(() => {
     isRendered = true;
 
+    setRoomName('dundies-'+ Object.values(roomList).length.toString().padStart(2,'0'));
+
     socket.emit('check-room-exists', JSON.stringify({ roomName: null, token: Cookies.get("user-token") }));
     socket.emit('lobby');
 
@@ -37,6 +39,11 @@ const Home = (props) => {
       isRendered = false;
     };
   }, [])
+
+  useEffect(() => {
+    setRoomName('dundies-'+ Object.values(roomList).length.toString().padStart(2,'0'));
+  }, [roomList])
+
 
   const start = (e) => {
     e.preventDefault();
@@ -69,7 +76,7 @@ const Home = (props) => {
       <div className="booklet-page">
       <div className="booklet-page">
 
-        <div className="flex">
+        <div className="flex index-page">
 
 
           <div className="point">
@@ -92,7 +99,7 @@ const Home = (props) => {
             <div className="create-room">
               <form onSubmit={(e) => start(e)}>
                 <h3>New room</h3>
-                <input type="text" className="big-input" placeholder="Room Name" required onChange={(e) => setRoomName(e.target.value)} value={roomName} /> 
+                <input type="text" value={roomName} className="big-input" placeholder="Room Name" required onChange={(e) => setRoomName(e.target.value)} /> 
                 <button disabled={roomName.length < 1} className='action'>Create</button> 
               </form>
             </div>

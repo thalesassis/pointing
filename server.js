@@ -87,7 +87,7 @@ app.prepare()
       if (roomData) {
         io.to(roomData.room).emit('story-loading', true);
         roomData.storyLoading = true;
-        axios.get('https://www.pivotaltracker.com/services/v5/projects/2434677/stories/' + storyId.replace("#",""), {
+        axios.get('https://www.pivotaltracker.com/services/v5/projects/2434677/stories/' + storyId.toString().replace("#",""), {
           headers: {
             'X-TrackerToken': process.env.PT_TOKEN
           }
@@ -185,7 +185,6 @@ app.prepare()
           io.emit('rejoin');
           socket.emit('check-room-exists');
         }
-        console.log(userList);
       }
     })
 
@@ -276,6 +275,52 @@ app.prepare()
         }
         io.to(roomData.room).emit('reset-votes', JSON.stringify({...roomUsers}))
         resendUsersVotes(roomData);
+      }
+    });
+
+    socket.on('add-topic', (topic) => {
+      let user = getUser(socket);
+      let roomData = getUserRoom(socket);
+      if (user && roomData) {
+        let newTopic = {
+          "index": (Math.random() * Date.now()).toString(),
+          "user_id": user.id,
+          "user": user.name,
+          "checked": false,
+          "text": topic
+        }
+        roomData.topics.push(newTopic);
+        io.to(user.room).emit('add-topic', newTopic)
+      }
+    });
+
+    socket.on('remove-topic', (index) => {
+      let user = getUser(socket);
+      let roomData = getUserRoom(socket);
+      if (user && roomData) {
+        roomData.topics = roomData.topics.filter(x => x.index != index);
+        io.to(user.room).emit('remove-topic', index)
+      }
+    });
+
+    socket.on('clear-topics', (index) => {
+      let user = getUser(socket);
+      let roomData = getUserRoom(socket);
+      if (user && roomData) {
+        roomData.topics = [];
+        io.to(user.room).emit('clear-topics', index)
+      }
+    });
+
+    socket.on('topic-discussed', (topic) => {
+      let user = getUser(socket);
+      let roomData = getUserRoom(socket);
+      if (user && roomData) {
+        t = _.find(roomData.topics, x => x.index === topic.index);
+        if (t) {
+          t.checked = topic.checked;
+          io.to(user.room).emit('topic-discussed', t)
+        }
       }
     });
 
@@ -423,7 +468,7 @@ app.prepare()
 
     let room = roomList.find(x => x.room === roomName);
     if (!room) {
-      roomList.push({ room: roomName, storyLoading: false, revealVotes: false, story: [], users: [] });
+      roomList.push({ room: roomName, storyLoading: false, revealVotes: false, topics: [], story: [], users: [] });
     }
   }
 
@@ -461,6 +506,16 @@ app.prepare()
       let user = userList.find(x => x.id == userToken);
       if (user) {
         user.id = socket.id;
+
+        if (user.room) {
+          let roomData = getUserRoom(socket);
+          _.each(roomData.topics, x => {
+            if (x.user_id == userToken) {
+              x.user_id = socket.id;
+            }
+          })
+        }
+
         socket.emit("user-token", socket.id);
       } else {
         newUser = true;

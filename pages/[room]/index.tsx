@@ -3,15 +3,65 @@ import { withRouter } from 'next/router';
 import _ from 'lodash';
 import socketContext from '../../context/socketContext';
 import { FaEdit, FaUser, FaLongArrowAltRight } from 'react-icons/fa';
-import { AiOutlineEye, AiOutlineLink, AiOutlineCloseCircle } from 'react-icons/ai';
+import { AiOutlineEye, AiOutlineLink, AiOutlineCloseCircle, AiOutlineCheck, AiOutlinePlus } from 'react-icons/ai';
 import { VscDebugRestart } from 'react-icons/vsc';
 import { BiDoorOpen, BiSad, BiSearchAlt } from 'react-icons/bi';
+import { RiCloseCircleFill } from 'react-icons/ri';
 import { usePageVisibility } from 'react-page-visibility';
 import ReactMarkdown from 'react-markdown';
 import Switch from "react-switch";
 import Cookies from 'js-cookie';
+import Creatable from 'react-select/creatable';
+import Checkbox from "react-custom-checkbox";
 
 const Room = (props) => {
+
+  const topics = [
+    {
+      label: "UX", 
+      options: [
+        { label: "Do we need a mock for this?" },
+        { label: "How will this look in mobile breakpoints?" },
+        { label: "Do we have the icons added in Icomoon?" }
+      ]
+    }, {
+      label: "Front-end / Back-end", 
+      options: [
+        { label: "Will this require both front and back-end?" },
+        { label: "Does this apply for PHP/AngularJS pages?" },
+        { label: "Will this require a new library?" },
+        { label: "Do we have a component for this?" },
+        { label: "Do we have class styles for this?" },
+        { label: "Do we an example anywhere?" },
+        { label: "What API should be used?" },
+        { label: "Which system settings may affect this story?" },
+        { label: "Should this be implemented on Syng?" }
+      ]
+    },
+    {
+      label: "Accessibility",
+      options: [
+        { label: "How will accessibility behave in this case?" },
+        { label: "How should we label elements for screen readers?" }
+      ]
+    },
+    {
+      label: "Testing",
+      options: [
+        { label: "Will this require both QA and UX review?" },
+        { label: "Should we re-test any other part of the system?" }
+      ]
+    },
+    {
+      label: "Story",
+      options: [
+        { label: "Is this release when ready?" },
+        { label: "Is this for law version only?" },
+        { label: "Does this story depend on another?" }
+      ]
+    }
+  ];
+
   const socket = useContext(socketContext);
   const [userNameInput, setUserNameInput] = useState('');
   const [editingName, setEditingName] = useState(false);
@@ -20,6 +70,12 @@ const Room = (props) => {
   const [userList, setUserList] = useState({});
   const [newUserList, setNewUserList] = useState({});
   const [pointList, setPointList] = useState({});
+  const [topicList, setTopicList] = useState([]);
+  const [topicSelect, setTopicSelect] = useState([]);
+  const [newTopic, setNewTopic] = useState(null);
+  const [selectedTopic, setSelectedTopic] = useState(null);
+  const [removeTopic, setRemoveTopic] = useState(null);
+  const [topicDiscussed, setTopicDiscussed] = useState(null);
   const [myVote, setMyVote] = useState(null);
   const [recoverVote, setRecoverVote] = useState(null);
   const [revealVotes, setRevealVotes] = useState(false);
@@ -36,6 +92,7 @@ const Room = (props) => {
   const [storyCooldown, setStoryCooldown] = useState(false);
   const [refresh, setRefresh] = useState(false);
   const [flipAnimation, setFlipAnimation] = useState(false);
+  const [discussionInput, setDiscussionInput] = useState('');
   let isRendered = false;
 
   const isVisible = usePageVisibility();
@@ -63,6 +120,7 @@ const Room = (props) => {
       if (data.revealVotes) {
         setRevealedVotes(true);
       }
+      setTopicList(data.topics);
     })
 
     listen("reset-votes", (data) => {
@@ -127,10 +185,18 @@ const Room = (props) => {
       setRefresh(true);     
     })
 
+    listen("topic-discussed", (topic) => { 
+      setTopicDiscussed(topic);
+    })
+
     listen("story-loaded", (story) => {      
       if (!_.isEmpty(story)) {
         setStoryNotFound(false);
         setStory(story);
+
+        if(story.id) {
+          setStoryId(story.id);
+        }
         setStoryLoading(false);
         if (!story.no_cooldown) {
           setStoryCooldown(true);
@@ -148,6 +214,18 @@ const Room = (props) => {
       setStory({ id: '', url: '', name: '', description: '' });
     })
 
+    listen("add-topic", (data) => {
+      setNewTopic(data);
+    })
+
+    listen("remove-topic", (data) => {
+      setRemoveTopic(data);
+    })
+
+    listen("clear-topics", (data) => {
+      setTopicList([]);
+    })
+
     listen("check-room-exists", () => {
       socket.emit('check-room-exists', JSON.stringify({ roomName: null, token: Cookies.get("user-token") }));
     })
@@ -163,6 +241,35 @@ const Room = (props) => {
       socket.emit('check-room-exists', JSON.stringify({ roomName: room, token: Cookies.get("user-token") }));
     }
   }, [props.router.query])
+
+  useEffect(() => {
+      if (newTopic) {
+        let addingTopic = _.cloneDeep(topicList);
+        addingTopic.push(newTopic);
+        setTopicList(addingTopic);
+        setSelectedTopic(null);
+        topicSelect.clearValue();
+      }
+  }, [newTopic])
+
+  useEffect(() => {
+      if (removeTopic) {
+        let removingTopic = _.cloneDeep(topicList);
+        removingTopic = _.filter(topicList, x => x.index != removeTopic);
+        setTopicList(removingTopic);
+      }
+  }, [removeTopic])
+
+  useEffect(() => {
+    if (topicDiscussed) {
+      let tlist = _.cloneDeep(topicList);
+      let t = _.find(tlist, x => x.index == topicDiscussed.index);
+      if (t) {
+        t.checked = topicDiscussed.checked;
+        setTopicList(tlist);
+      }
+    }
+  }, [topicDiscussed])
 
   useEffect(() => {
     setUserList(newUserList);
@@ -204,7 +311,6 @@ const Room = (props) => {
       }
 
       if (changed) {
-        console.log("votes changing");
         setUserList(userListPointed);
       }
     }
@@ -324,6 +430,7 @@ const Room = (props) => {
     socket.emit("reset-votes");
   }
   const leaveRoomAction = () => {
+    setTopicList([]);
     socket.emit("leave-room");
   }
   const getStory = (e) => {
@@ -384,6 +491,41 @@ const Room = (props) => {
     return votes;
   }
 
+  const addTopic = () => {
+    if (selectedTopic) {
+      socket.emit('add-topic', selectedTopic.value);
+    }
+  }
+
+  const removeTopicAction = (index) => {
+    if (window.confirm('Are you sure you want to remove this topic?')) {
+      socket.emit('remove-topic', index);
+    }
+  }
+
+  const topicValues = () => {
+    _.each(topics, topic => {
+      _.each(topic.options, x => {
+        x.value = x.label
+      })
+    })
+    return topics;
+  }
+
+  const clearTopics = () => {
+    if (window.confirm('Are you sure you want to remove all topics?')) {
+      socket.emit('clear-topics');
+    }
+  }
+
+  const topicDiscussedAction = (index, val) => {
+    socket.emit('topic-discussed', { index: index, checked: val });
+  }
+
+  const solvedTopics = (index, val) => {
+    let solved = _.filter(topicList, x => x.checked).length;
+    return solved;
+  }
 
   return (
     <>
@@ -552,26 +694,92 @@ const Room = (props) => {
           </div>
 
           <div className="story">
-            <form className="flex" onSubmit={(e) => getStory(e)}>
-              <input className="regular-input mr-10" type="text" placeholder="Story ID" required onChange={(e) => setStoryId(e.target.value)} value={storyId} /> 
-              <button className="action nowrap load-story" disabled={findStoryDisabled || storyLoading}>{ findStoryLabel }</button>
-            </form> 
-            {storyNotFound && <div className="story-status"><BiSad /> The story was not found.</div>}
-            {storyLoading && <div className="story-status"><BiSearchAlt /> Loading a story, please wait...</div>}
+            <div className="story-area">
+              <form className="flex" onSubmit={(e) => getStory(e)}>
+                <input className="regular-input mr-10" type="text" placeholder="Story ID" required onChange={(e) => setStoryId(e.target.value)} value={storyId} /> 
+                <button className="action nowrap load-story" disabled={findStoryDisabled || storyLoading}>{ findStoryLabel }</button>
+              </form> 
+              {storyNotFound && <div className="story-status"><BiSad /> The story was not found.</div>}
+              {storyLoading && <div className="story-status"><BiSearchAlt /> Loading a story, please wait...</div>}
 
-            {story.id && 
-            <div>
-              <a className="title" href={story.url} target="_blank"><AiOutlineLink /> {story.name}</a>
-              <div className="description tracker-markup">
-                <ReactMarkdown
-                children={ story.description }
-                linkTarget='_blank'
-                ></ReactMarkdown>
+              {story.id && 
+              <div>
+                <a className="title" href={story.url} target="_blank"><AiOutlineLink /> {story.name}</a>
+                <div className="description tracker-markup">
+                  <ReactMarkdown
+                  children={ story.description }
+                  linkTarget='_blank'
+                  ></ReactMarkdown>
+                </div>
+                <button className="action mt-10 danger fright" onClick={(e) => { closeStory(e) }}><AiOutlineCloseCircle />Close Story</button> 
               </div>
-              <button className="action mt-10 danger fright" onClick={(e) => { closeStory(e) }}><AiOutlineCloseCircle />Close Story</button> 
+              }
             </div>
-            }
+            <div className="discussion">
+              <div className="flex add-topic" onKeyUp={(e) => { e.keyCode == 13 ? addTopic() : null }}>
+                <Creatable
+                  options={topicValues()} 
+                  ref={(ref) => {
+                    setTopicSelect(ref);
+                  }}
+                  width="100%"
+                  onChange={(e) => setSelectedTopic(e)}  
+                  data={selectedTopic}
+                  placeholder="Select or write a topic"
+                  formatCreateLabel={(e) => { return e; }}
+                  menuPosition="fixed"
+                  menuPlacement="auto"
+                  menuShouldBlockScroll="true"
+                  className="mr-10"
+                />
+                <button onClick={(e) => { addTopic() }} className="action icon-only"><AiOutlinePlus size={20} /></button>
+              </div>
+
+              <div className="topics">
+                <ul>
+
+                  {topicList.map((val: any) => {
+                    return val.text && 
+                    <li onKeyUp={(e) => { e.keyCode == 13 ? topicDiscussedAction(val.index, !val.checked) : null }} key={val.index} tabIndex="0" className={`${val.checked ? "discussed" : ""} ${val.user ? "mb-25" : ""}`}>
+                      <label>
+                        <div className="topic-discussed">
+                          <Checkbox
+                            icon={<AiOutlineCheck color="#56a359" size={20} />}
+                            name="my-input"
+                            checked={val.checked}
+                            onChange={(value) => {
+                              topicDiscussedAction(val.index, value);
+                            }}
+                            size={20}
+                            borderColor="#56a359"
+                            style={{ cursor: "pointer" }}
+                            labelStyle={{ marginLeft: 5, userSelect: "none" }}
+                          />
+                        </div>
+                        {val.user &&
+                        <div className="topic-user">{val.user}</div>}
+                        <div className="topic-text">{val.text}</div>
+                        {val.user_id == socket.id &&
+                        <div className="topic-remove">
+                          <button onClick={(e) => { removeTopicAction(val.index); }}>
+                            <RiCloseCircleFill color="#912929" size={20} />
+                          </button>
+                        </div>
+                        }
+                      </label>
+                    </li>
+                  })}
+                </ul>
+              </div>  
+
+              {topicList.length > 0 && 
+              <div class="discussion-actions">
+                <button className="action clear-topics danger fleft" onClick={() => { clearTopics() }}><VscDebugRestart />Clear topics</button> 
+                <div className="topic-count">{ solvedTopics() + ' / ' + topicList.length }</div>
+              </div>}
+            </div>
           </div>
+
 
         </div>
 
