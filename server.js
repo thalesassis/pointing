@@ -28,7 +28,7 @@ app.prepare()
   let roomList = [];
   let userList = [];
   let pointList = ['0','1','2','3','5','8','?'];
-  let actionTimeout = 60 * 60000;
+  let actionTimeout = 2 * 3600000;
 
   server.get('*', (req, res) => {
     return handle(req, res);
@@ -39,7 +39,7 @@ app.prepare()
     console.log('> Ready')
   })
 
-  /*
+  
   setInterval(() => {
     _.each(userList, (u) => {
       let inactiveTime = Date.now() - u.lastAction;
@@ -55,10 +55,9 @@ app.prepare()
     }
   }, ((actionTimeout/2) + 5000));
   
-
-
+  /*
   setInterval(() => {
-    console.log("[==========="+ new Date().toISOString() +"============]");
+    //console.log("[==========="+ new Date().toISOString() +"============]");
     connectedSockets = io.sockets.sockets;
     for (let [key, val] of connectedSockets) {
       console.log(val.id);
@@ -66,6 +65,7 @@ app.prepare()
     console.log(userList);
   }, 10000);
   */
+  
 
   io.on('connection', (socket) => {
     //console.log('a user connected ' + socket.id);
