@@ -698,10 +698,10 @@ const Room = (props) => {
                   </div>
                   }
                   <ReactTooltip offset={{top: 10}} id={val.name + '-eyeOpen'}>
-                    {val.name} is active and ready to vote!
+                    {val.name} is looking at the screen
                   </ReactTooltip>
                   <ReactTooltip offset={{top: 10}} id={val.name + '-eyeClosed'}>
-                    {val.name} is not even looking at the screen!
+                    {val.name} is NOT looking at the screen
                   </ReactTooltip>
 
                 </div>
