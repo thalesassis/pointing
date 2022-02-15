@@ -14,7 +14,7 @@ import Cookies from 'js-cookie';
 import Creatable from 'react-select/creatable';
 import Checkbox from "react-custom-checkbox";
 import Lottie from 'react-lottie-player'
-import animationData from "./animation/eye";
+import animationData from "./animation/eye.json";
 import ReactTooltip from 'react-tooltip';
 
 const Room = (props) => {
@@ -593,7 +593,7 @@ const Room = (props) => {
             <>
                 <h2 className="username">
                 <a className="icon" data-tip="Change your name" onClick={() => { setEditingName(true); }}><FaEdit /></a>
-                <a className="icon trash" data-tip="Remove you from the pointing list" onClick={() => { removeUser(true); }}><FaTrashAlt /></a>
+                <a className="icon trash" data-tip="Remove you from the pointing list" onClick={() => { removeUser(); }}><FaTrashAlt /></a>
                 {userName}</h2>
             </>
           )}
@@ -757,7 +757,7 @@ const Room = (props) => {
               </div>
               }
               {!story.id && 
-              <div class="notice">
+              <div className="notice">
                 <h2>Add a story</h2>
                 Adding a story will make it available for everyone to read. 
                 <br /><br />
@@ -822,7 +822,7 @@ const Room = (props) => {
               </div>  
               }
               {topicList.length == 0 && 
-              <div class="notice">
+              <div className="notice">
 
                 <h2>Add a topic</h2>
                 You can add topics here to discuss with the team. Either choose one from the list or type anything, then click Plus Button to add. 
