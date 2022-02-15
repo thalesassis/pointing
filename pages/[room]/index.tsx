@@ -2,7 +2,7 @@ import React, { Component, useEffect, useState, useContext, useRef } from "react
 import { withRouter } from 'next/router';
 import _ from 'lodash';
 import socketContext from '../../context/socketContext';
-import { FaEdit, FaUser, FaLongArrowAltRight } from 'react-icons/fa';
+import { FaEdit, FaUser, FaLongArrowAltRight,FaTrashAlt } from 'react-icons/fa';
 import { AiOutlineEye, AiOutlineLink, AiOutlineCloseCircle, AiOutlineCheck, AiOutlinePlus } from 'react-icons/ai';
 import { VscDebugRestart } from 'react-icons/vsc';
 import { BiDoorOpen, BiSad, BiSearchAlt } from 'react-icons/bi';
@@ -13,6 +13,9 @@ import Switch from "react-switch";
 import Cookies from 'js-cookie';
 import Creatable from 'react-select/creatable';
 import Checkbox from "react-custom-checkbox";
+import Lottie from 'react-lottie-player'
+import animationData from "./animation/eye";
+import ReactTooltip from 'react-tooltip';
 
 const Room = (props) => {
 
@@ -93,12 +96,18 @@ const Room = (props) => {
   const [refresh, setRefresh] = useState(false);
   const [flipAnimation, setFlipAnimation] = useState(false);
   const [discussionInput, setDiscussionInput] = useState('');
+  const [lottieRef, setLottieRef] = useState(null);
   let isRendered = false;
 
   const isVisible = usePageVisibility();
 
   useEffect(() => {    
     isRendered = true;
+
+    let userCookieName = Cookies.get("user-name");
+    if (userCookieName) {
+      setUserNameInput(userCookieName); 
+    }
 
     const listen = (message, func) => {
       socket.on(message, (ret) => {
@@ -261,6 +270,11 @@ const Room = (props) => {
   }, [removeTopic])
 
   useEffect(() => {
+    ReactTooltip.rebuild();
+    ReactTooltip.hide();
+  }, [topicList])
+
+  useEffect(() => {
     if (topicDiscussed) {
       let tlist = _.cloneDeep(topicList);
       let t = _.find(tlist, x => x.index == topicDiscussed.index);
@@ -268,6 +282,7 @@ const Room = (props) => {
         t.checked = topicDiscussed.checked;
         setTopicList(tlist);
       }
+      ReactTooltip.rebuild();
     }
   }, [topicDiscussed])
 
@@ -324,6 +339,7 @@ const Room = (props) => {
         u.data.voting = whoVoting.status;
       }
       setUserList(userListPointed);
+      ReactTooltip.rebuild();
     }
   }, [whoVoting])
 
@@ -331,6 +347,8 @@ const Room = (props) => {
     if (Object.keys(userList).length > 0 && myVote === null) {
       //vote('Not voted');
     }
+    ReactTooltip.rebuild();
+    ReactTooltip.hide();
   }, [userList])
 
   useEffect(() => {
@@ -342,6 +360,7 @@ const Room = (props) => {
 
   useEffect(() => {
     socket.emit('is-voting', isVisible);
+    ReactTooltip.rebuild();
   }, [isVisible])
 
   useEffect(() => {
@@ -352,6 +371,7 @@ const Room = (props) => {
       s = s.replace(/  -/g, '    -');
       story.description = s;
     }
+    ReactTooltip.rebuild();
   }, [story])
 
 
@@ -443,6 +463,7 @@ const Room = (props) => {
     e.preventDefault();
     setEditingName(false);
     socket.emit("user-name", userNameInput);
+    Cookies.set('user-name', userNameInput);
     socket.emit("is-voting", true);
   }
   const closeStory = (e) => {
@@ -527,6 +548,13 @@ const Room = (props) => {
     return solved;
   }
 
+  const removeUser = () => {
+    if (confirm('Remove your participation?')) {
+      socket.emit('remove-user-from-list');
+      setUserName('');
+    }
+  }
+
   return (
     <>
     <title>Dundies Symple Points</title>
@@ -563,7 +591,9 @@ const Room = (props) => {
 
           {userName !== '' && !editingName && (
             <>
-                <h2 className="username"><a className="icon" onClick={() => { setEditingName(true); }}><FaEdit /></a>
+                <h2 className="username">
+                <a className="icon" data-tip="Change your name" onClick={() => { setEditingName(true); }}><FaEdit /></a>
+                <a className="icon trash" data-tip="Remove you from the pointing list" onClick={() => { removeUser(true); }}><FaTrashAlt /></a>
                 {userName}</h2>
             </>
           )}
@@ -572,7 +602,7 @@ const Room = (props) => {
 
         <div className="top-right">
           <div className="top-action">
-            <button title="Leave room" onClick={() => { leaveRoomAction() }} className="action icon-button"><BiDoorOpen /></button> 
+            <button title="Leave room" data-tip="Leave room" onClick={() => { leaveRoomAction() }} className="action icon-button"><BiDoorOpen /></button> 
           </div>
           <div className="top-info">
             {Object.values(userList).filter((x: any) => x.name == undefined).length >= 0 &&
@@ -584,7 +614,6 @@ const Room = (props) => {
         </div>
       </div>
 
-
       <div className="booklet">
       <div className="booklet-page">
       <div className="booklet-page">
@@ -592,8 +621,6 @@ const Room = (props) => {
       <div className="booklet-page">
 
         <div className="flex">
-
-
           <div className="point">
             {userName != '' &&
               <ul className="point-options">
@@ -643,24 +670,39 @@ const Room = (props) => {
                     <div className="inner bg-white">
                       <div className="back shadow">
                       {val.data.voting &&
-                        <div className="wave">
-                          <span className="dot"></span>
-                          <span className="dot"></span>
-                          <span className="dot"></span>
+                        <div className="eye-icon">
+                          <Lottie
+                            data-tip data-for={val.name + '-eyeOpen'}
+                            animationData={animationData}
+                            play
+                            loop={false}
+                            speed={3}
+                          />
                         </div>
                       }
 
                       {!val.data.voting &&
-                      <div className="wave stopped">
-                        <span className="dot"></span>
-                        <span className="dot"></span>
-                        <span className="dot"></span>
-                      </div>
+                        <div className="eye-icon">
+                          <Lottie
+                            data-tip data-for={val.name + '-eyeClosed'} 
+                            animationData={animationData}
+                            play
+                            loop={false}
+                            direction={-1}
+                            speed={3}
+                          />
+                        </div>
                       }
                       </div>
                     </div>
                   </div>
                   }
+                  <ReactTooltip offset={{top: 10}} id={val.name + '-eyeOpen'}>
+                    {val.name} is active and ready to vote!
+                  </ReactTooltip>
+                  <ReactTooltip offset={{top: 10}} id={val.name + '-eyeClosed'}>
+                    {val.name} is not even looking at the screen!
+                  </ReactTooltip>
 
                 </div>
               </li>)
@@ -704,7 +746,7 @@ const Room = (props) => {
 
               {story.id && 
               <div>
-                <a className="title" href={story.url} target="_blank"><AiOutlineLink /> {story.name}</a>
+                <a data-tip="Click to open in Pivotal Tracker" className="title" href={story.url} target="_blank"><AiOutlineLink /> {story.name}</a>
                 <div className="description tracker-markup">
                   <ReactMarkdown
                   children={ story.description }
@@ -712,6 +754,14 @@ const Room = (props) => {
                   ></ReactMarkdown>
                 </div>
                 <button className="action mt-10 danger fright" onClick={(e) => { closeStory(e) }}><AiOutlineCloseCircle />Close Story</button> 
+              </div>
+              }
+              {!story.id && 
+              <div class="notice">
+                <h2>Add a story</h2>
+                Adding a story will make it available for everyone to read. 
+                <br /><br />
+                <div><strong>Tip:</strong> Clicking the story's name will open it in Pivotal Tracker.</div>
               </div>
               }
             </div>
@@ -730,9 +780,10 @@ const Room = (props) => {
                   menuShouldBlockScroll={true}
                   className="mr-10"
                 />
-                <button onClick={(e) => { addTopic() }} className="action icon-only"><AiOutlinePlus size={20} /></button>
+                <button data-tip="Add selected topic" onClick={(e) => { addTopic() }} className="action icon-only"><AiOutlinePlus size={20} /></button>
               </div>
 
+              {topicList.length > 0 && 
               <div className="topics">
                 <ul>
 
@@ -740,7 +791,7 @@ const Room = (props) => {
                     return val.text && 
                     <li onKeyUp={(e) => { e.keyCode == 13 ? topicDiscussedAction(val.index, !val.checked) : null }} key={val.index} tabIndex={0} className={`${val.checked ? "discussed" : ""} ${val.user ? "mb-25" : ""}`}>
                       <label>
-                        <div className="topic-discussed">
+                        <div className="topic-discussed" data-tip="Toggle discussed">
                           <Checkbox
                             icon={<AiOutlineCheck color="#56a359" size={20} />}
                             name="my-input"
@@ -758,7 +809,7 @@ const Room = (props) => {
                         <div className="topic-user">{val.user}</div>}
                         <div className="topic-text">{val.text}</div>
                         {val.user_id == socket.id &&
-                        <div className="topic-remove">
+                        <div className="topic-remove" data-tip="Remove topic">
                           <button onClick={(e) => { removeTopicAction(val.index); }}>
                             <RiCloseCircleFill color="#912929" size={20} />
                           </button>
@@ -769,6 +820,16 @@ const Room = (props) => {
                   })}
                 </ul>
               </div>  
+              }
+              {topicList.length == 0 && 
+              <div class="notice">
+
+                <h2>Add a topic</h2>
+                You can add topics here to discuss with the team. Either choose one from the list or type anything, then click Plus Button to add. 
+                <br /><br />
+                <div><strong>Tip:</strong> The topic list can give you good ideas on questions you can make about the story. Feel free to suggest topics to be permanently added to the list.</div>                
+              </div>
+              }
 
               {topicList.length > 0 && 
               <div className="discussion-actions">
@@ -777,8 +838,6 @@ const Room = (props) => {
               </div>}
             </div>
           </div>
-
-
         </div>
 
 
@@ -788,6 +847,7 @@ const Room = (props) => {
       </div>
       </div>
     </main>
+    <ReactTooltip offset={{top: 10}} />
     </>
   );
 }

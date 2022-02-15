@@ -47,6 +47,16 @@ const Home = (props) => {
 
   const start = (e) => {
     e.preventDefault();
+    if (Object.values(roomList).length > 0) {
+      if (confirm("Someone else already created a room. Are you sure you want to create your own room?")) {
+        createRoom(roomName);
+      }
+    } else {
+      createRoom(roomName);
+    }
+  }
+
+  const createRoom = (roomName) => {
     socket.emit("join-room", roomName);
     props.router.push('/' + roomName);
   }
@@ -81,7 +91,7 @@ const Home = (props) => {
 
           <div className="point">
             <div className="room-list">
-              <h3>Rooms list</h3>
+              <h3>Rooms list - Click to join!</h3>
               
               <ul>
               {Object.values(roomList).map((val: any) => {
@@ -98,7 +108,7 @@ const Home = (props) => {
 
             <div className="create-room">
               <form onSubmit={(e) => start(e)}>
-                <h3>New room</h3>
+                <h3>Create a new room</h3>
                 <input type="text" value={roomName} className="big-input" placeholder="Room Name" required onChange={(e) => setRoomName(e.target.value)} /> 
                 <button disabled={roomName.length < 1} className='action'>Create</button> 
               </form>

@@ -336,6 +336,16 @@ app.prepare()
       //console.log('User deleted');
       //console.log(users);
     });
+
+    socket.on('remove-user-from-list', () => {
+      let user = userList.find(x => x.id === socket.id);
+      let roomData = getUserRoom(socket);
+      user.name = undefined;
+      user.data.point = 'Not voted';
+      user.data.vote = 'Not voted';
+      user.data.voting = true;
+      resendUsersVotes(roomData);
+    });
   });
 
   getUser = (socket) => {
@@ -457,9 +467,33 @@ app.prepare()
             }
             delete r.data.vote;
           }
+          io.to(r.id).emit('room-users', JSON.stringify({...roomUsers}));
         }
       }
-      io.to(u.id).emit('room-users', JSON.stringify({...roomUsers}));
+    })
+  }
+
+  resendUsersVotes = (roomData) => {
+    _.each(userList, (u) => {
+      let roomUsers = _.cloneDeep(userList);
+      roomUsers = roomUsers.filter(x => x.room === roomData.room);
+      if (roomUsers) {
+        for (r of roomUsers) {
+          if (r.data.vote) {
+            if (roomData.revealVotes || r.id == u.id) {
+              r.data.point = r.data.vote;
+            } else {
+              if (r.data.vote != "Voted" && r.data.vote != "Not voted") {
+                r.data.point = "Voted";
+              } else {
+                r.data.point = r.data.vote;
+              }
+            }
+            delete r.data.vote;
+          }
+          io.to(r.id).emit('room-users', JSON.stringify({...roomUsers}));
+        }
+      }
     })
   }
 

@@ -5,7 +5,6 @@ import socketContext from '../context/socketContext';
 import Cookies from 'js-cookie';
 import { io } from "socket.io-client";
 
-
 const socket = io(process.env.WEBSOCKET_SERVER, {transports: ['websocket']});
 
 const MyApp = ({ Component, pageProps }: AppProps) => {

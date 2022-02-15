@@ -252,6 +252,11 @@ h3 {
         margin-top: 2px;
         cursor: pointer;
 
+        &.trash {
+          margin-top: 4px;
+          font-size: 20px;
+        }
+
         &:hover {
           color: lighten(#000, 30%);
         }
@@ -322,6 +327,22 @@ h3 {
   }
 }
 
+.type-dark {
+  color: #fff;
+  background: #222;
+  border: 1px solid transparent;
+
+  &::after {
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    bottom: -6px;
+    left: 50%;
+    margin-left: -8px;
+    border-top-color: #222;
+    border-top-style: solid;
+    border-top-width: 6px;
+  }
+}
 
 main {
   padding: 20px;
@@ -344,6 +365,15 @@ main {
       visibility: hidden;
       height: 0;
     }
+  }
+
+  .notice {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    text-align: center;
+    line-height: 150%;
+    flex-direction: column;
   }
 
   .room-list {
@@ -718,6 +748,11 @@ main {
           height: 40px;
           border-radius: 10px;
           position: relative;
+
+          .eye-icon {
+            padding-top: 5px;
+            margin-left: 1px;
+          }
 
           .wave {
             position: absolute;
