@@ -14,7 +14,7 @@ import Cookies from 'js-cookie';
 import Creatable from 'react-select/creatable';
 import Checkbox from "react-custom-checkbox";
 import Lottie from 'react-lottie-player'
-import animationData from "./animation/eye.json";
+import animationData from "../../public/animation/eye.json";
 import ReactTooltip from 'react-tooltip';
 
 const Room = (props) => {
