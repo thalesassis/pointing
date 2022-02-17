@@ -130,8 +130,7 @@ app.prepare()
         if (!usersInRoom) {
           sendRoomsToLobby();
         } else {
-          io.to(roomData.room).emit('room-users', JSON.stringify({...usersInRoom}));
-          io.to(roomData.room).emit('update-votes');          
+          resendUsersVotes(roomData);        
         }
 
         socket.emit('goto-index');
