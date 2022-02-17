@@ -630,87 +630,93 @@ const Room = (props) => {
               </ul>
             }
 
-            <ul className="name-list">
-            {Object.values(userList).map((val: any) => {
-              return val.name && (<li key={val.id}>
-                <div className="name">{val.name}</div>
+            {Object.values(userList).find((x: any) => x.name != undefined) == undefined &&
+              <div className="notice">
+                <h2>Story pointing</h2>
+                Pointing starts when someone joins.
+              </div>
+            }
+
+            {Object.values(userList).find((x: any) => x.name != undefined) != undefined &&
+              <ul className="name-list">
+              {Object.values(userList).map((val: any) => {
+                return val.name && (<li key={val.id}>
+                  <div className="name">{val.name}</div>
 
 
-                <div className="card-placeholder">
+                  <div className="card-placeholder">
 
-                  {(socket.id == val.id) && val.data.point != 'Not voted' && val.data.point != 'Voted' &&
-                    <div className={`vote-card flipped`} >
-                    <div className="inner">
+                    {(socket.id == val.id) && val.data.point != 'Not voted' && val.data.point != 'Voted' &&
+                      <div className={`vote-card flipped`} >
+                      <div className="inner">
+                          <div className="front shadow">{val.data.point}</div>
+                          <div className="back card-logo"><span><i>D</i></span></div>
+                        </div>
+                      </div>
+                    }
+
+                    {(socket.id != val.id) && val.data.point != 'Not voted' && val.data.point != 'Voted' &&
+                    <div className={`vote-card ${flipAnimation ? "unflip" : "flipped"}`} >
+                      <div className="inner">
                         <div className="front shadow">{val.data.point}</div>
                         <div className="back card-logo"><span><i>D</i></span></div>
                       </div>
                     </div>
-                  }
+                    }
 
-                  {(socket.id != val.id) && val.data.point != 'Not voted' && val.data.point != 'Voted' &&
-                  <div className={`vote-card ${flipAnimation ? "unflip" : "flipped"}`} >
-                    <div className="inner">
-                      <div className="front shadow">{val.data.point}</div>
-                      <div className="back card-logo"><span><i>D</i></span></div>
-                    </div>
-                  </div>
-                  }
-
-                  {val.data.point == 'Voted' &&
-                  <div className="vote-card">
-                    <div className="inner">
-                      <div className="front shadow">{val.data.point}</div>
-                      <div className="back card-logo"><span><i>D</i></span></div>
-                    </div>
-                  </div>
-                  }
-
-                  {val.data.point == 'Not voted' &&
-                  <div className="vote-card">
-                    <div className="inner bg-white">
-                      <div className="back shadow">
-                      {val.data.voting &&
-                        <div className="eye-icon">
-                          <Lottie
-                            data-tip data-for={val.name + '-eyeOpen'}
-                            animationData={animationData}
-                            play
-                            loop={false}
-                            speed={3}
-                          />
-                        </div>
-                      }
-
-                      {!val.data.voting &&
-                        <div className="eye-icon">
-                          <Lottie
-                            data-tip data-for={val.name + '-eyeClosed'} 
-                            animationData={animationData}
-                            play
-                            loop={false}
-                            direction={-1}
-                            speed={3}
-                          />
-                        </div>
-                      }
+                    {val.data.point == 'Voted' &&
+                    <div className="vote-card">
+                      <div className="inner">
+                        <div className="front shadow">{val.data.point}</div>
+                        <div className="back card-logo"><span><i>D</i></span></div>
                       </div>
                     </div>
+                    }
+
+                    {val.data.point == 'Not voted' &&
+                    <div className="vote-card">
+                      <div className="inner bg-white">
+                        <div className="back shadow">
+                        {val.data.voting &&
+                          <div className="eye-icon">
+                            <Lottie
+                              data-tip data-for={val.name + '-eyeOpen'}
+                              animationData={animationData}
+                              play
+                              loop={false}
+                              speed={3}
+                            />
+                          </div>
+                        }
+
+                        {!val.data.voting &&
+                          <div className="eye-icon">
+                            <Lottie
+                              data-tip data-for={val.name + '-eyeClosed'} 
+                              animationData={animationData}
+                              play
+                              loop={false}
+                              direction={-1}
+                              speed={3}
+                            />
+                          </div>
+                        }
+                        </div>
+                      </div>
+                    </div>
+                    }
+                    <ReactTooltip offset={{top: 10}} id={val.name + '-eyeOpen'}>
+                      {val.name} is looking at the screen
+                    </ReactTooltip>
+                    <ReactTooltip offset={{top: 10}} id={val.name + '-eyeClosed'}>
+                      {val.name} is NOT looking at the screen
+                    </ReactTooltip>
+
                   </div>
-                  }
-                  <ReactTooltip offset={{top: 10}} id={val.name + '-eyeOpen'}>
-                    {val.name} is looking at the screen
-                  </ReactTooltip>
-                  <ReactTooltip offset={{top: 10}} id={val.name + '-eyeClosed'}>
-                    {val.name} is NOT looking at the screen
-                  </ReactTooltip>
-
-                </div>
-              </li>)
-            })}
-
-            {Object.values(userList).find((x: any) => x.name != undefined) == undefined &&
-              <li>No one joined the pointing yet.</li>}
-            </ul>
+                </li>)
+              })}
+              </ul>
+            }
 
             {!(Object.values(userList).find((x: any) => x.name != undefined) == undefined) &&
               <div className="pointing-actions">

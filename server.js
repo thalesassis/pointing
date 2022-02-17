@@ -450,51 +450,35 @@ app.prepare()
   }
 
   resendUsersVotes = (roomData) => {
-    _.each(userList, (u) => {
-      let roomUsers = _.cloneDeep(userList);
-      roomUsers = roomUsers.filter(x => x.room === roomData.room);
-      if (roomUsers) {
-        for (r of roomUsers) {
-          if (r.data.vote) {
-            if (roomData.revealVotes || r.id == u.id) {
-              r.data.point = r.data.vote;
-            } else {
-              if (r.data.vote != "Voted" && r.data.vote != "Not voted") {
-                r.data.point = "Voted";
-              } else {
-                r.data.point = r.data.vote;
-              }
-            }
-            delete r.data.vote;
-          }
-          io.to(r.id).emit('room-users', JSON.stringify({...roomUsers}));
-        }
-      }
-    })
-  }
+    let usersToReceiveVotes = _.cloneDeep(userList);
+    usersToReceiveVotes = usersToReceiveVotes.filter(x => x.room === roomData.room);
+    if (usersToReceiveVotes) {
+      _.each(usersToReceiveVotes, (u) => {
 
-  resendUsersVotes = (roomData) => {
-    _.each(userList, (u) => {
-      let roomUsers = _.cloneDeep(userList);
-      roomUsers = roomUsers.filter(x => x.room === roomData.room);
-      if (roomUsers) {
-        for (r of roomUsers) {
-          if (r.data.vote) {
-            if (roomData.revealVotes || r.id == u.id) {
-              r.data.point = r.data.vote;
-            } else {
-              if (r.data.vote != "Voted" && r.data.vote != "Not voted") {
-                r.data.point = "Voted";
-              } else {
+        //Creating data to send to users in the room
+        let roomUsers = _.cloneDeep(userList);
+        roomUsers = roomUsers.filter(x => x.room === roomData.room);
+        if (roomUsers) {
+          for (r of roomUsers) {
+            if (r.data.vote) {
+              if (roomData.revealVotes || r.id == u.id) {
                 r.data.point = r.data.vote;
+              } else {
+                if (r.data.vote != "Voted" && r.data.vote != "Not voted") {
+                  r.data.point = "Voted";
+                } else {
+                  r.data.point = r.data.vote;
+                }
               }
+              delete r.data.vote;
             }
-            delete r.data.vote;
           }
-          io.to(r.id).emit('room-users', JSON.stringify({...roomUsers}));
         }
-      }
-    })
+
+        //Send created data to room users
+        io.to(u.id).emit('room-users', JSON.stringify({...roomUsers}));
+      })
+    }
   }
 
   createRoom = (socket, roomName) => {

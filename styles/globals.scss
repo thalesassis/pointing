@@ -481,6 +481,10 @@ main {
       .story-area {
         flex: 0 0 50%;
         padding-right: 20px;
+
+        form {
+          min-height: 37px;
+        }
       }
 
       .discussion {
@@ -751,7 +755,7 @@ main {
 
           .eye-icon {
             padding-top: 5px;
-            margin-left: 1px;
+            margin-left: 0px;
           }
 
           .wave {
@@ -886,6 +890,14 @@ main {
     .regular-input {
       margin-bottom: 10px;
     }
+    .top {
+      .top-right {
+        position: absolute;
+        top: 25px;
+        right: 15px;
+        width: 50%;
+      }
+    }
     .flex {
       flex-direction: column;
 
@@ -920,6 +932,23 @@ main {
       .point {
         padding: 20px 20px 20px 20px;
         box-shadow: none;
+      
+        .point-options {
+          li button {
+            padding: 7px 11px;
+          }
+        }
+      }
+
+      .pointing-actions {
+        .action {
+          letter-spacing: 0px;
+        }
+      }
+
+      button.action.load-story {
+        min-width: 140px;
+        letter-spacing: 0px;
       }
     }
   }
