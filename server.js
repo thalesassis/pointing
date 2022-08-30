@@ -70,6 +70,10 @@ app.prepare()
   io.on('connection', (socket) => {
     //console.log('a user connected ' + socket.id);
 
+    socket.on("connect_error", (err) => {
+      console.log(`connect_error due to ${err.message}`);
+    });
+
     socket.on('user-token', (data) => {
       handleRefresh(socket, data);      
       removeUnusedSockets(io);
@@ -82,24 +86,30 @@ app.prepare()
       sendRoomsToLobby();
     })
 
-    socket.on('get-story', (storyId) => {
+    socket.on('get-story', (label) => {
       let roomData = getUserRoom(socket);
       if (roomData) {
         io.to(roomData.room).emit('story-loading', true);
         roomData.storyLoading = true;
-        axios.get('https://www.pivotaltracker.com/services/v5/projects/2434677/stories/' + storyId.toString().replace("#",""), {
+        axios.get('https://www.pivotaltracker.com/services/v5/projects/2434677/stories?with_label=' + encodeURI(label), {
           headers: {
             'X-TrackerToken': process.env.PT_TOKEN
           }
         })
         .then(story => {          
           let roomData = getUserRoom(socket);
-          if (roomData) {
+          if (roomData && story.data.length > 0) {
+            story.data[0].active = true;
+            story.data[0].storyLabel = label;
             roomData.story = story.data;
             io.to(roomData.room).emit('story-loaded', story.data);
             roomData.storyLoading = false;
+          } else {
+            io.to(roomData.room).emit('story-404');
+            roomData.storyLoading = false;
           }
         }).catch(e => {
+          console.log('error loading stories');
           io.to(roomData.room).emit('story-404');
           roomData.storyLoading = false;
         })
@@ -111,6 +121,17 @@ app.prepare()
       if (roomData) {
         roomData.story = { id: '', url: '', name: '', description: '' };
         io.to(roomData.room).emit('close-story');
+      }
+    });
+
+    socket.on('goto-story', (number) => {
+      let roomData = getUserRoom(socket);
+      if (roomData) {
+        _.each(roomData.story, (u) => {
+          u.active = false;
+        })
+        roomData.story[number].active = true;
+        io.to(roomData.room).emit('change-story', number);
       }
     });
 
@@ -433,8 +454,7 @@ app.prepare()
         socket.join(room);
         
         let roomData = getUserRoom(socket);
-        if (roomData && roomData.story) {
-          roomData.story.no_cooldown = true;
+        if (roomData && roomData.story.length > 0) {
           socket.emit('story-loaded', roomData.story);
         }
         

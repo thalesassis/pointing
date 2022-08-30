@@ -86,11 +86,14 @@ const Room = (props) => {
   const [revealedVotes, setRevealedVotes] = useState(false);
   const [whoVoted, setWhoVoted] = useState(null)
   const [whoVoting, setWhoVoting] = useState(null)
-  const [storyId, setStoryId] = useState('');
-  const [story, setStory] = useState({ id: '', url: '', name: '', description: '' });
+  const [storyLabel, setStoryLabel] = useState(null);
+  const [storyPrevLabel, setStoryPrevLabel] = useState(null);
+  const [story, setStory] = useState([]);
   const [storyLoading, setStoryLoading] = useState(false);
+  const [storyLoaded, setStoryLoaded] = useState(false);
+  const [activeStory, setActiveStory] = useState(0);
   const [storyNotFound, setStoryNotFound] = useState(false);
-  const [findStoryLabel, setFindStoryLabel] = useState('Load Story');
+  const [findStoryLabel, setFindStoryLabel] = useState('Load Stories');
   const [findStoryDisabled, setFindStoryDisabled] = useState(false);
   const [storyCooldown, setStoryCooldown] = useState(false);
   const [refresh, setRefresh] = useState(false);
@@ -103,6 +106,24 @@ const Room = (props) => {
 
   useEffect(() => {    
     isRendered = true;
+
+    (function() {
+        function scrollHorizontally(e) {
+            e = window.event || e;
+            var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+            sel.scrollLeft -= (delta * 40); // Multiplied by 40
+            e.preventDefault();
+        }
+        let sel = document.getElementById('story-selector');
+        if (sel) {
+          if (sel.addEventListener) {
+              // IE9, Chrome, Safari, Opera
+              sel.addEventListener('mousewheel', scrollHorizontally, false);
+              // Firefox
+              sel.addEventListener('DOMMouseScroll', scrollHorizontally, false);
+          }
+        }
+    })();
 
     let userCookieName = Cookies.get("user-name");
     if (userCookieName) {
@@ -198,14 +219,11 @@ const Room = (props) => {
       setTopicDiscussed(topic);
     })
 
-    listen("story-loaded", (story) => {      
+    listen("story-loaded", (story) => {
       if (!_.isEmpty(story)) {
         setStoryNotFound(false);
         setStory(story);
 
-        if(story.id) {
-          setStoryId(story.id);
-        }
         setStoryLoading(false);
         if (!story.no_cooldown) {
           setStoryCooldown(true);
@@ -219,10 +237,6 @@ const Room = (props) => {
       setStoryCooldown(true);
     })
 
-    listen("close-story", () => {
-      setStory({ id: '', url: '', name: '', description: '' });
-    })
-
     listen("add-topic", (data) => {
       setNewTopic(data);
     })
@@ -233,6 +247,10 @@ const Room = (props) => {
 
     listen("clear-topics", (data) => {
       setTopicList([]);
+    })
+
+    listen("change-story", (data) => {
+      setActiveStory(data);
     })
 
     listen("check-room-exists", () => {
@@ -344,9 +362,12 @@ const Room = (props) => {
   }, [whoVoting])
 
   useEffect(() => {
-    if (Object.keys(userList).length > 0 && myVote === null) {
-      //vote('Not voted');
+    if (Object.keys(userList).length == 0) {
+      if (!storyLoaded) {
+        setStoryLoaded(true);
+      }
     }
+
     ReactTooltip.rebuild();
     ReactTooltip.hide();
   }, [userList])
@@ -359,21 +380,85 @@ const Room = (props) => {
   }, [revealVotes])
 
   useEffect(() => {
+    if (storyLoaded) {
+      getStory(null);
+    }
+  }, [setStoryLoaded])
+
+  useEffect(() => {
     socket.emit('is-voting', isVisible);
     ReactTooltip.rebuild();
   }, [isVisible])
 
   useEffect(() => {
-    if (story.description) {
-      let s = linkify(story.description);
-      s = s.replace(/\n/g, '  \n');
-      s = s.replace(/    -/g, '        -');
-      s = s.replace(/  -/g, '    -');
-      story.description = s;
-    }
+    _.forEach(story, st => {
+      if (st.description) {
+        let s = linkify(st.description);
+        s = s.replace(/\n/g, '  \n');
+        s = s.replace(/    -/g, '        -');
+        s = s.replace(/  -/g, '    -');
+        st.description = s;
+      }
+    })
     ReactTooltip.rebuild();
+
+    let s = _.findIndex(story, (x, index) => x.active == true);
+    if (s !== -1) {
+      setActiveStory(s);
+    }
+    if (story.length > 0) {
+      setStoryPrevLabel(story[0].storyLabel);
+    }
   }, [story])
 
+  useEffect(() => {
+    let index = activeStory;
+    var pager = document.getElementById('story-selector-wrapper');
+    var _a, _b;
+    if (pager && pager.querySelectorAll('button').length > 0) {
+      var previous_1 = 0;
+      pager.querySelectorAll('button').forEach(function (q) {
+        q.classList.remove('is-selected', 'is-next', 'is-prev');
+      });
+      var margin_1 = 1;
+      var total = pager === null || pager === void 0 ? void 0 : pager.querySelectorAll('button').length;
+      var prev = pager === null || pager === void 0 ? void 0 : pager.querySelectorAll('button')[index - 1];
+      var next = pager === null || pager === void 0 ? void 0 : pager.querySelectorAll('button')[index + 1];
+      var actual = pager === null || pager === void 0 ? void 0 : pager.querySelectorAll('button')[index];
+      var sLeft = (_a = pager === null || pager === void 0 ? void 0 : pager.parentElement) === null || _a === void 0 ? void 0 : _a.scrollLeft;
+      var viewableWidth = pager === null || pager === void 0 ? void 0 : pager.parentElement.clientWidth;
+      if (actual) {
+          var indexLeft = ((actual === null || actual === void 0 ? void 0 : actual.getBoundingClientRect().left) - (pager === null || pager === void 0 ? void 0 : pager.getBoundingClientRect().left) - margin_1) - sLeft;
+          var totalWidth_1 = 0;
+          pager === null || pager === void 0 ? void 0 : pager.querySelectorAll('button').forEach(function (e) {
+              totalWidth_1 += e.clientWidth + (2 * margin_1);
+          });
+          previous_1 = index;
+          if (!next) {
+              next = pager === null || pager === void 0 ? void 0 : pager.querySelectorAll('button')[0];
+          }
+          if (!prev) {
+              prev = pager === null || pager === void 0 ? void 0 : pager.querySelectorAll('button')[total - 1];
+          }
+          var positionInsideView = (sLeft + indexLeft) - ((viewableWidth / 2) - (((actual === null || actual === void 0 ? void 0 : actual.clientWidth) + (2 * margin_1)) / 2));
+          
+          if (positionInsideView < 0 || positionInsideView > 1) {
+              (_b = pager === null || pager === void 0 ? void 0 : pager.parentElement) === null || _b === void 0 ? void 0 : _b.scroll({
+                  left: (((actual === null || actual === void 0 ? void 0 : actual.getBoundingClientRect().left) - (pager === null || pager === void 0 ? void 0 : pager.getBoundingClientRect().left)) - (viewableWidth / 2) + (((actual === null || actual === void 0 ? void 0 : actual.clientWidth) / 2) - margin_1)),
+                  top: 0,
+                  behavior: 'smooth'
+              });;
+          }
+          if (prev) {
+              prev.classList.add('is-prev');
+          }
+          if (next) {
+              next.classList.add('is-next');
+          }
+          actual.classList.add('is-selected');
+      }
+  }
+  }, [activeStory])
 
   useEffect(() => {
     if (unrevealVotes) {
@@ -454,10 +539,10 @@ const Room = (props) => {
     socket.emit("leave-room");
   }
   const getStory = (e) => {
-    e.preventDefault();
+    if (e) { e.preventDefault(); }
     setStoryLoading(true);
     setStoryNotFound(false);
-    socket.emit("get-story", storyId);
+    socket.emit("get-story", storyLabel);
   }
   const start = (e) => {
     e.preventDefault();
@@ -466,13 +551,8 @@ const Room = (props) => {
     Cookies.set('user-name', userNameInput);
     socket.emit("is-voting", true);
   }
-  const closeStory = (e) => {
-    e.preventDefault();
-    socket.emit("close-story");
-  }
   const delUser = (e) => {
     e.preventDefault();
-    console.log("delUser");
     socket.emit("deluser");
   }
   const mostVoted = () => {
@@ -553,6 +633,11 @@ const Room = (props) => {
       socket.emit('remove-user-from-list');
       setUserName('');
     }
+  }
+
+  const goTo = (e, number) => {
+    e.preventDefault();
+    socket.emit('goto-story', number);
   }
 
   return (
@@ -744,25 +829,42 @@ const Room = (props) => {
           <div className="story">
             <div className="story-area">
               <form className="flex" onSubmit={(e) => getStory(e)}>
-                <input className="regular-input mr-10" type="text" placeholder="Story ID" required onChange={(e) => setStoryId(e.target.value)} value={storyId} /> 
-                <button className="action nowrap load-story" disabled={findStoryDisabled || storyLoading}>{ findStoryLabel }</button>
-              </form> 
-              {storyNotFound && <div className="story-status"><BiSad /> The story was not found.</div>}
-              {storyLoading && <div className="story-status"><BiSearchAlt /> Loading a story, please wait...</div>}
+                <input className="regular-input mr-10" type="text" placeholder="Label" required onChange={(e) => setStoryLabel(e.target.value)} value={storyLabel !== null ? storyLabel : 'needs grooming'} /> 
+                <button className="action nowrap load-story" disabled={findStoryDisabled || storyLoading}>Load Stories</button>
+              </form>
 
-              {story.id && 
-              <div>
-                <a data-tip="Click to open in Pivotal Tracker" className="title" href={story.url} target="_blank"><AiOutlineLink /> {story.name}</a>
-                <div className="description tracker-markup">
-                  <ReactMarkdown
-                  children={ story.description }
-                  linkTarget='_blank'
-                  ></ReactMarkdown>
+              {storyNotFound && <div className="story-status"><BiSad /> There are no stories for this label.</div>}
+              {storyLoading && <div className="story-status"><BiSearchAlt /> Loading stories, please wait...</div>}
+
+              {story.length > 0 && 
+                <div className="story-index">{ storyPrevLabel ? '"'+ storyPrevLabel +'" - ' : ''}Story {activeStory + 1} of {story.length}</div>
+              }
+              
+              <div className={`story-selector ${story.length == 0 ? "disabled" : ""}`}  id="story-selector">
+                <div className="story-selector-wrapper" id="story-selector-wrapper">
+                {story.map((val: any, index: number) => {
+                  let active = index == activeStory ? 'active' : '';
+                  return <button key={ index } data-tip={ val.name } className={`${active ? "active" : ""}`} onClick={(e) => { goTo(e, index) }}>{index + 1}</button> 
+                })}
                 </div>
-                <button className="action mt-10 danger fright" onClick={(e) => { closeStory(e) }}><AiOutlineCloseCircle />Close Story</button> 
+              </div>
+              {story.length > 0 && 
+              <div className="story-slider">
+                  {story.map((val: any) => {
+                    return val.id &&
+                    <div  key={ val.id } className="story-slide" style={{ transform: 'translateX(' + (activeStory * -100) + '%)' }}>
+                      <a data-tip="Click to open in Pivotal Tracker" className="title" href={val.url} target="_blank"><AiOutlineLink /> {val.name}</a>
+                      <div className="description tracker-markup">
+                        <ReactMarkdown
+                        children={ val.description }
+                        linkTarget='_blank'
+                        ></ReactMarkdown>
+                      </div>
+                    </div>
+                  })}
               </div>
               }
-              {!story.id && 
+              {story.length == 0 && 
               <div className="notice">
                 <h2>Add a story</h2>
                 Adding a story will make it available for everyone to read. 

@@ -433,6 +433,7 @@ main {
     .booklet-page {
       background: darken(#d5d0bd, 30%);
       padding: 1px 3px;
+      width: 100%;
       flex: 1;
 
       .booklet-page {
@@ -478,8 +479,88 @@ main {
       padding: 20px 15px 20px 30px;    
       display: flex;
 
+      .story-index {
+        text-align: center;
+        margin: 15px 0px 5px 0px;
+      }
+
+      .story-selector {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 25px;
+        overflow: hidden;
+        position: relative;
+        margin-bottom: -1px;
+        &.disabled {
+          height: 0px;
+        }
+        .story-selector-wrapper {
+          position: absolute;
+          height: 24px;
+          left: -1px;
+          top: 0px;
+          white-space: nowrap;
+          display: flex;
+          align-items: flex-end;
+          button {
+            z-index: 1;
+            margin-bottom: -1px;
+            margin-right: 1px;
+            margin-left: 1px;
+            cursor: pointer;
+            background: #FFF;
+            min-width: 30px;
+            white-space: nowrap;
+            height: 20px;
+            border: 0px;
+            border-radius: 5px 5px 0 0;
+            border-right: 1px solid #a59b74;
+            border-left: 1px solid #a59b74;
+            border-top: 1px solid #a59b74;
+            border-bottom: 1px solid #a59b74;
+            transition: all 0.1s ease-out;
+            background: #e5e5e5;
+            &.active {
+              border-bottom: 0;
+              height: 25px;
+              font-size: 15px;
+              min-width: 45px;
+              font-weight: bold;
+              background: #FFF;
+            }
+            &:last-child {
+              margin-right: 0px;
+            }
+            &:hover:not(.active) {
+              height: 23px;
+              background: #FFF;
+            }
+          }
+        }
+      }
+
+      .story-slider {
+        border: 1px solid #a59b74;
+        background: #FFF;
+        display: inline-flex;
+        width: 100%;
+        overflow: hidden;
+        z-index: 0;
+        .story-slide {
+          display: flex;
+          flex-direction: column;
+          align-content: stretch;
+          min-width: 100%;
+          max-height: 500px;
+          padding: 0px 10px;
+          transition: all 0.2s ease-out;
+        }
+      }
+
       .story-area {
         flex: 0 0 50%;
+        max-width: 50%;
         padding-right: 20px;
 
         form {
@@ -607,8 +688,7 @@ main {
         text-decoration: pointer;
         margin-bottom: 5px;
         font-weight: bold;
-        margin-top: 10px;
-        border-top: 1px solid #a59b74;
+        margin-top: 0px;
         padding-top: 10px;
         margin-bottom: 10px;
 
@@ -624,7 +704,8 @@ main {
       }
 
       .description {
-        max-height: 500px;
+        max-height: 100%;
+        height: 100%;
         overflow-y: auto;
         background-color: #fff;
         border: 1px solid #ccc;
@@ -904,6 +985,10 @@ main {
       .story {
         flex-direction: column;
 
+        .story-area {
+          max-width: unset;
+        }
+
         padding: 0px 20px 20px 20px;
         box-shadow: none;
         .regular-input {
@@ -947,7 +1032,6 @@ main {
       }
 
       button.action.load-story {
-        min-width: 140px;
         letter-spacing: 0px;
       }
     }
