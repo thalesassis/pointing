@@ -29,7 +29,6 @@ app.prepare()
   let userList = [];
   let pointList = ['0','1','2','3','5','8','?'];
   let actionTimeout = 2 * 3600000;
-
   server.get('*', (req, res) => {
     return handle(req, res);
   })
@@ -38,7 +37,6 @@ app.prepare()
     if (err) throw err
     console.log('> Ready')
   })
-
   
   setInterval(() => {
     _.each(userList, (u) => {
@@ -53,6 +51,13 @@ app.prepare()
       userList = userList.filter(x => !x.expired)
       updateRoomsUsers();
     }
+
+    _.each(roomList, (u) => {
+      let usersInRoom = getUsersInRoom(u.room);
+      if (usersInRoom.length == 0) {
+        roomList = roomList.filter(x => x.room != u.room)
+      }
+    })
   }, ((actionTimeout/2) + 5000));
   
   /*
