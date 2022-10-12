@@ -86,7 +86,7 @@ const Room = (props) => {
   const [revealedVotes, setRevealedVotes] = useState(false);
   const [whoVoted, setWhoVoted] = useState(null)
   const [whoVoting, setWhoVoting] = useState(null)
-  const [storyLabel, setStoryLabel] = useState(null);
+  const [storyLabel, setStoryLabel] = useState('needs grooming');
   const [storyPrevLabel, setStoryPrevLabel] = useState(null);
   const [story, setStory] = useState([]);
   const [storyLoading, setStoryLoading] = useState(false);
@@ -829,7 +829,7 @@ const Room = (props) => {
           <div className="story">
             <div className="story-area">
               <form className="flex" onSubmit={(e) => getStory(e)}>
-                <input className="regular-input mr-10" type="text" placeholder="Label" required onChange={(e) => setStoryLabel(e.target.value)} value={storyLabel !== null ? storyLabel : 'needs grooming'} /> 
+                <input className="regular-input mr-10" type="text" placeholder="Label" required onChange={(e) => setStoryLabel(e.target.value)} value={storyLabel} />
                 <button className="action nowrap load-story" disabled={findStoryDisabled || storyLoading}>Load Stories</button>
               </form>
 
