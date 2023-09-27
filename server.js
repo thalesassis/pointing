@@ -5,6 +5,7 @@ const app = next({ dev })
 const _ = require('lodash');
 const handle = app.getRequestHandler()
 const axios = require('axios');
+const marked = require('marked');
 
 //TODO: check all user actions - test as if user didnt exist
     
@@ -59,22 +60,8 @@ app.prepare()
       }
     })
   }, ((actionTimeout/2) + 5000));
-  
-  /*
-  setInterval(() => {
-    //console.log("[==========="+ new Date().toISOString() +"============]");
-    connectedSockets = io.sockets.sockets;
-    for (let [key, val] of connectedSockets) {
-      console.log(val.id);
-    }
-    console.log(userList);
-  }, 10000);
-  */
-  
-
+ 
   io.on('connection', (socket) => {
-    //console.log('a user connected ' + socket.id);
-
     socket.on("connect_error", (err) => {
       console.log(`connect_error due to ${err.message}`);
     });
@@ -82,8 +69,6 @@ app.prepare()
     socket.on('user-token', (data) => {
       handleRefresh(socket, data);      
       removeUnusedSockets(io);
-
-      //console.log(userList);
     });
 
     socket.on('lobby', () => {
@@ -106,6 +91,10 @@ app.prepare()
           if (roomData && story.data.length > 0) {
             story.data[0].active = true;
             story.data[0].storyLabel = label;
+            for (i of story.data) {
+              let parsed = marked.parse(i.description, { gfm: true, breaks: true });
+              i.description = parsed.replace(new RegExp('<ol start="0"', 'g'), '<ol start="1"');
+            }
             roomData.story = story.data;
             io.to(roomData.room).emit('story-loaded', story.data);
             roomData.storyLoading = false;
@@ -114,7 +103,6 @@ app.prepare()
             roomData.storyLoading = false;
           }
         }).catch(e => {
-          console.log('error loading stories');
           io.to(roomData.room).emit('story-404');
           roomData.storyLoading = false;
         })
@@ -167,10 +155,6 @@ app.prepare()
       socket.leave('lobby');
       let user = getUser(socket);
       if (user) {
-        let usersInRoom = getUsersInRoom(roomName);
-        if (!usersInRoom) {
-          user.host = true;
-        }
         createRoom(socket, roomName);
         user.room = roomName;
         sendRoomsToLobby();
@@ -231,6 +215,10 @@ app.prepare()
       let userToken = userList.find(x => x.id == obj.token);
       if (userToken) {
         userToken.id = socket.id;
+        let roomData = roomList.find(x => x.room === roomName);
+        if (roomData && roomData.host === userToken) {
+          room.host = socket.id;
+        }
       }
 
       removeUnusedSockets(io);
@@ -357,9 +345,6 @@ app.prepare()
       let users = _.cloneDeep(userList);
       users = _.filter(userList, x => x.id != socket.id);
       userList = users;
-
-      //console.log('User deleted');
-      //console.log(users);
     });
 
     socket.on('remove-user-from-list', () => {
@@ -370,6 +355,17 @@ app.prepare()
       user.data.vote = 'Not voted';
       user.data.voting = true;
       resendUsersVotes(roomData);
+    });
+
+    socket.on('remove-given-user-from-list', (user_id) => {
+      let user = userList.find(x => x.id === user_id);
+      let roomData = getUserRoom(socket);
+      user.name = undefined;
+      user.data.point = 'Not voted';
+      user.data.vote = 'Not voted';
+      user.data.voting = true;
+      resendUsersVotes(roomData);
+      io.to(user_id).emit('remove-yourself');
     });
   });
 
@@ -506,11 +502,17 @@ app.prepare()
   }
 
   createRoom = (socket, roomName) => {
+    let usersInRoom = getUsersInRoom(roomName);
+    let host = '';
+    if (!usersInRoom.length) {
+      host = socket.id;
+    }
+
     socket.join(roomName);
 
     let room = roomList.find(x => x.room === roomName);
     if (!room) {
-      roomList.push({ room: roomName, storyLoading: false, revealVotes: false, topics: [], story: [], users: [] });
+      roomList.push({ room: roomName, host: host, storyLoading: false, revealVotes: false, topics: [], story: [], users: [] });
     }
   }
 
@@ -547,10 +549,14 @@ app.prepare()
     if (!_.isNull(userToken)) {
       let user = userList.find(x => x.id == userToken);
       if (user) {
+        let previous_id = _.clone(user.id);
         user.id = socket.id;
 
         if (user.room) {
           let roomData = getUserRoom(socket);
+          if (roomData && roomData.host === previous_id) {
+            roomData.host = socket.id;
+          }
           _.each(roomData.topics, x => {
             if (x.user_id == userToken) {
               x.user_id = socket.id;

@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;1,100;1,300;1,400;1,500;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Zen+Antique&display=swap');
 
@@ -10,6 +11,18 @@ $secondary: #916a14;
 $danger: #912929;
 
 $text: #333;
+
+.__react_component_tooltip::before {
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.place-right::after {
+  left: 1px !important;
+}
+.place-left::after {
+  left: 100% !important;
+}
 
 html,
 body {
@@ -213,7 +226,7 @@ h3 {
   display: inline-block;
   width: 100%;
   font-size: 15px;
-  padding: 5px;
+  padding: 5px 10px;
   background: #FFF;
   text-align: left;
   margin: 0px auto 0px auto;
@@ -421,6 +434,7 @@ main {
   }
 
   .booklet {
+    position: relative;
     margin: 0px auto;
     max-width: 1200px;
     display: flex;
@@ -429,6 +443,42 @@ main {
     padding: 20px;
     border-radius: 15px;
     box-shadow: 4px 5px 2px -1px #939393;
+
+    .display-tabs {
+      position: absolute;
+      top: -31px;
+      right: 25px;
+      list-style: none;
+      display: flex;
+      align-items: flex-end;
+
+      li {
+        display: inline-flex;
+        align-items: flex-end;
+        height: 35px;
+        button {
+          transition: all 0.1s ease-out;
+          @include font('Open Sans');
+          cursor: pointer;
+          border-radius: 10px 10px 0 0;
+          background-color: #ada47f;
+          border: 0;
+          box-shadow: none;
+          padding: 0px 10px;
+          margin-right: 10px;
+          font-weight: bold;
+          text-transform: uppercase;
+          height: 28px;
+        }
+        &.active {
+          button {
+            height: 35px;
+            margin-bottom: -3px;
+            background-color: #d5d0bd;
+          }
+        }
+      }
+    }
 
     .booklet-page {
       background: darken(#d5d0bd, 30%);
@@ -471,13 +521,13 @@ main {
     }
 
     .story {
+      position: relative;
       flex: 1;
       background-size: cover;
-      overflow: hidden;
+      overflow-x: hidden;
       word-break: break-word;
       box-shadow: 0px 0px 15px 0px #242424;
-      padding: 20px 15px 20px 30px;    
-      display: flex;
+      padding: 20px 15px 20px 30px;
 
       .story-index {
         text-align: center;
@@ -559,22 +609,27 @@ main {
       }
 
       .story-area {
-        flex: 0 0 50%;
-        max-width: 50%;
-        padding-right: 20px;
+        flex: 0 0 100%;
+        max-width: 100%;
 
         form {
           min-height: 37px;
         }
       }
 
-      .discussion {
-        flex: 1 1 50%;
-        max-width: 50%;
-        border: 0;
-        padding-left: 20px;
-        border-left: 1px solid #a59b74;
+      
+
+      .display-area {
         display: flex;
+        flex-wrap: nowrap;
+        width: 100%;
+      }
+
+      .discussion {
+        display: none;
+        flex: 1 1 100%;
+        max-width: 100%;
+        border: 0;
         flex-direction: column;
         height: auto;
         justify-content: stretch;
@@ -602,7 +657,6 @@ main {
             list-style: none;
             padding: 8px 10px 0px 0px;
             overflow-y: auto;
-            max-height: 400px;
             li {
               position: relative;
               border-radius: 0px;
@@ -704,6 +758,7 @@ main {
       }
 
       .description {
+        @include font('Open Sans');
         max-height: 100%;
         height: 100%;
         overflow-y: auto;
@@ -803,6 +858,14 @@ main {
         align-items: center;
         border-bottom: 1px solid lighten(#a59b74, 15%);
         padding: 5px 0px;
+
+        a {
+          &:hover {
+            cursor: pointer;
+            text-decoration: line-through;
+            color: red;
+          }
+        }
 
         &:last-child {
           border-bottom: 0px;
@@ -984,10 +1047,6 @@ main {
 
       .story {
         flex-direction: column;
-
-        .story-area {
-          max-width: unset;
-        }
 
         padding: 0px 20px 20px 20px;
         box-shadow: none;

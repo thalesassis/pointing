@@ -473,3 +473,42 @@
 .tracker-markup .native_emoji.chrome_browser {
   letter-spacing: 4px;
 }
+
+.tracker-markup h1,
+.tracker-markup h2,
+.tracker-markup h3,
+.tracker-markup h4,
+.tracker-markup h5,
+.tracker-markup h6 {
+  color: #333;
+  text-transform: none;
+  font-weight: bold;
+  line-height: 1.55;
+}
+
+.tracker-markup h1 {
+  font-size: 1.45em;
+}
+
+.tracker-markup h2 {
+  font-size: 1.35em;
+}
+
+.tracker-markup h3 {
+  font-size: 1.25em;
+}
+
+.tracker-markup h4 {
+  font-size: 1.15em;
+}
+
+.tracker-markup h5 {
+  font-size: 1.15em;
+  color: #666;
+}
+
+.tracker-markup h6 {
+  font-size: 1.15em;
+  color: #888;
+  font-weight: 600;
+}
