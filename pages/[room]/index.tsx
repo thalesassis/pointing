@@ -238,7 +238,7 @@ const Room = (props) => {
         if (!story.no_cooldown) {
           setStoryCooldown(true);
         }
-        let storyDiv = document.querySelector('.story');
+        let storyDiv = document.querySelector<HTMLElement>('.story');
         storyDiv.style.minHeight = storyDiv.getBoundingClientRect().height + 'px';
       }
     })
@@ -655,8 +655,8 @@ const Room = (props) => {
   }
 
   const goToSection = (e, index) => {
-    let storyArea = document.querySelector('.story-area');
-    let discussionArea = document.querySelector('.discussion');
+    let storyArea = document.querySelector<HTMLElement>('.story-area');
+    let discussionArea = document.querySelector<HTMLElement>('.discussion');
     setActiveSection(index);
 
     if (index === 0) {
