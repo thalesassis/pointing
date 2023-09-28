@@ -738,7 +738,7 @@ const Room = (props) => {
       <div className="booklet-page">
       <div className="booklet-page">
 
-        <div className="flex">
+        <div className="flex pointing-page">
           <div className="point">
             {userName != '' &&
               <ul className="point-options">

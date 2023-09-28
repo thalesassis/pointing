@@ -617,8 +617,6 @@ main {
         }
       }
 
-      
-
       .display-area {
         display: flex;
         flex-wrap: nowrap;
@@ -784,6 +782,12 @@ main {
         display: none;
       }
 
+    }
+
+    &.pointing-page {
+      .story {
+        min-height: 320px;
+      }
     }
 
     .name-box {
