@@ -8,9 +8,6 @@ import { VscDebugRestart } from 'react-icons/vsc';
 import { BiDoorOpen, BiSad, BiSearchAlt } from 'react-icons/bi';
 import { RiCloseCircleFill } from 'react-icons/ri';
 import { usePageVisibility } from 'react-page-visibility';
-import ReactMarkdown from 'react-markdown';
-import Markdown from 'marked-react';
-import remarkGfm from 'remark-gfm';
 import Switch from "react-switch";
 import Cookies from 'js-cookie';
 import Creatable from 'react-select/creatable';
@@ -18,7 +15,6 @@ import Checkbox from "react-custom-checkbox";
 import Lottie from 'react-lottie-player'
 import animationData from "../../public/animation/eye.json";
 import ReactTooltip from 'react-tooltip';
-import { marked } from 'marked';
 const Room = (props) => {
 
   const topics = [
