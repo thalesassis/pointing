@@ -93,8 +93,8 @@ app.prepare()
             story.data[0].storyLabel = label;
             for (i of story.data) {
               let parsed = marked.parse(i.description, { gfm: true, breaks: true });
-              i.description = parsed.replace(new RegExp('<ol start="0"', 'g'), '<ol start="1"');
-              parsed = parsed.replace(new RegExp('<a ', 'g'), '<a target="_blank"');
+              parsed = parsed.replace(new RegExp('<ol start="0"', 'g'), '<ol start="1"');
+              i.description = parsed.replace(new RegExp('<a ', 'g'), '<a target="_blank"');
             }
             roomData.story = story.data;
             io.to(roomData.room).emit('story-loaded', story.data);
